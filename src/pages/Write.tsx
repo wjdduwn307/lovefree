@@ -119,7 +119,7 @@ export default function Write({ onNavigate }: ScreenProps) {
                 </li>
               </ul>
             </div>
-            <label className="toggle-row">
+            {/* <label className="toggle-row">
               <span>
                 <strong>댓글 받기</strong>
                 <small>다른 해방이들의 이야기를 들어요</small>
@@ -130,7 +130,7 @@ export default function Write({ onNavigate }: ScreenProps) {
                 onChange={(event) => setAllowComments(event.target.checked)}
               />
               <i />
-            </label>
+            </label> */}
             <div className="form-actions">
               <button
                 className="cancel-button"
