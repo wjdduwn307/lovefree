@@ -36,13 +36,20 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   );
 }
 
-function Logo({ inverse = false }: { inverse?: boolean }) {
+function Logo({ inverse = false, onClick }: {
+  inverse?: boolean
+  onClick?: () => void
+}) {
   return (
-    <div className={`logo ${inverse ? "logo-inverse" : ""}`}>
+    <button
+      className={`logo ${inverse ? "logo-inverse" : ""}`}
+      onClick={onClick}
+      aria-label="연애해방 홈으로 이동"
+    >
       <span className="logo-mark"><Icon name="heart" size={17} /></span>
       <span>연애해방</span>
-    </div>
-  );
+    </button>
+  )
 }
 
 export function Header({
@@ -66,7 +73,7 @@ export function Header({
   return (
     <>
       <header className={`site-header ${dark ? "header-dark" : ""}`}>
-        <Logo inverse={dark} />
+        <Logo inverse={dark} onClick={() => onNavigate("home")} />
         <nav className="desktop-nav" aria-label="주요 메뉴">
           <a className={active === "home" ? "nav-active" : ""} href="#feed" onClick={go("home")}>홈</a>
           <a href="#stories">고민 피드</a>

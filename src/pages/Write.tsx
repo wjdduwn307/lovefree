@@ -13,7 +13,7 @@ export default function Write({ onNavigate }: ScreenProps) {
   const [topic, setTopic] = useState("")
   const [title, setTitle] = useState("")
   const [body, setBody] = useState("")
-  const [allowComments, setAllowComments] = useState(true)
+  // const [allowComments, setAllowComments] = useState(true)
   const [published, setPublished] = useState(false)
 
   const canPublish = title.trim().length >= 5 && body.trim().length >= 20
