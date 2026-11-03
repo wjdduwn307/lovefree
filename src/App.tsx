@@ -1,27 +1,39 @@
-import { useEffect, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
-import { supabase } from "./lib/supabase";
-import LoginModal from "./LoginModal";
-import Home from "./Home";
+import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router";
+import Home from "./pages/Home";
+import Write from "./pages/Write";
+import Profile from "./pages/Profile";
+import type { Page } from "./types";
 
-export default function App() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [showLogin, setShowLogin] = useState(false);
+// Page 이름 -> 주소(URL) 대응표. 페이지가 늘면 여기에 한 줄 추가
+const paths: Record<Page, string> = {
+  home: "/",
+  write: "/write",
+  profile: "/profile",
+};
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
-    return () => data.subscription.unsubscribe();
-  }, []);
+function AppRoutes() {
+  const navigate = useNavigate();
+
+  // 기존 페이지들이 쓰는 onNavigate("write") 형태를 그대로 유지
+  const go = (page: Page) => {
+    navigate(paths[page]);
+    window.scrollTo(0, 0);
+  };
 
   return (
-    <>
-      <Home
-        loggedIn={!!session}
-        onLoginClick={() => setShowLogin(true)}
-        onLogout={() => supabase.auth.signOut()}
-      />
-      {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
-    </>
+    <Routes>
+      <Route path="/" element={<Home onNavigate={go} />} />
+      <Route path="/write" element={<Write onNavigate={go} />} />
+      <Route path="/profile" element={<Profile onNavigate={go} />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
   );
 }

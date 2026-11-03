@@ -1,4 +1,8 @@
-import type { ReactNode } from "react";
+import { useState, type MouseEvent, type ReactNode } from "react";
+import { supabase } from "../lib/supabase";
+import { useSession } from "../lib/useSession";
+import LoginModal from "../pages/LoginModal";
+import type { Page } from "../types";
 
 type IconName =
   | "arrow"
@@ -12,7 +16,7 @@ type IconName =
   | "sparkle"
   | "user";
 
-function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
+export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   const paths: Record<IconName, ReactNode> = {
     arrow: <path d="M5 12h14m-5-5 5 5-5 5" />,
     bookmark: <path d="M6 4.8A1.8 1.8 0 0 1 7.8 3h8.4A1.8 1.8 0 0 1 18 4.8V21l-6-3.8L6 21Z" />,
@@ -41,22 +45,54 @@ function Logo({ inverse = false }: { inverse?: boolean }) {
   );
 }
 
-function Header({ dark = false, loggedIn = false, onLoginClick, onLogout }: { dark?: boolean; loggedIn?: boolean; onLoginClick?: () => void; onLogout?: () => void }) {
+export function Header({
+  dark = false,
+  active = "home",
+  onNavigate,
+}: {
+  dark?: boolean;
+  active?: Page;
+  onNavigate: (page: Page) => void;
+}) {
+  const session = useSession();
+  const [showLogin, setShowLogin] = useState(false);
+
+  // <a href="#..."> 의 기본 동작(주소 변경)을 막고, 화면 전환 함수만 실행
+  const go = (page: Page) => (e: MouseEvent) => {
+    e.preventDefault();
+    onNavigate(page);
+  };
+
   return (
-    <header className={`site-header ${dark ? "header-dark" : ""}`}>
-      <Logo inverse={dark} />
-      <nav className="desktop-nav" aria-label="주요 메뉴">
-        <a className="nav-active" href="#feed">홈</a>
-        <a href="#stories">고민 피드</a>
-        <a href="#places">화해 장소</a>
-        <a href="#reviews">해결 후기</a>
-      </nav>
-      <div className="header-actions">
-        <button className="icon-button" aria-label="검색"><Icon name="search" /></button>
-        <button className="login-button" onClick={loggedIn ? onLogout : onLoginClick}>{loggedIn ? "로그아웃" : "로그인"}</button>
-        <button className="primary-button small"><Icon name="pen" size={17} /> 고민 나누기</button>
-      </div>
-    </header>
+    <>
+      <header className={`site-header ${dark ? "header-dark" : ""}`}>
+        <Logo inverse={dark} />
+        <nav className="desktop-nav" aria-label="주요 메뉴">
+          <a className={active === "home" ? "nav-active" : ""} href="#feed" onClick={go("home")}>홈</a>
+          <a href="#stories">고민 피드</a>
+          <a href="#places">화해 장소</a>
+          <a href="#reviews">해결 후기</a>
+        </nav>
+        <div className="header-actions">
+          <button className="icon-button" aria-label="검색"><Icon name="search" /></button>
+          {session && (
+            <button className="icon-button" aria-label="내 정보" onClick={() => onNavigate("profile")}>
+              <Icon name="user" />
+            </button>
+          )}
+          <button
+            className="login-button"
+            onClick={session ? () => supabase.auth.signOut() : () => setShowLogin(true)}
+          >
+            {session ? "로그아웃" : "로그인"}
+          </button>
+          <button className="primary-button small" onClick={() => onNavigate("write")}>
+            <Icon name="pen" size={17} /> 고민 나누기
+          </button>
+        </div>
+      </header>
+      {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
+    </>
   );
 }
 
@@ -147,22 +183,35 @@ const places = [
   { name: "노을 산책길", kind: "대화하기 좋은 공원", distance: "680m", color: "place-blue", icon: "♧" },
 ];
 
-function MobileNav({ dark = false }: { dark?: boolean }) {
+export function MobileNav({
+  dark = false,
+  active = "home",
+  onNavigate,
+}: {
+  dark?: boolean;
+  active?: Page;
+  onNavigate: (page: Page) => void;
+}) {
+  const go = (page: Page) => (e: MouseEvent) => {
+    e.preventDefault();
+    onNavigate(page);
+  };
+
   return (
     <nav className={`mobile-nav ${dark ? "mobile-nav-dark" : ""}`} aria-label="모바일 메뉴">
-      <a className="active" href="#feed"><Icon name="home" /><span>홈</span></a>
+      <a className={active === "home" ? "active" : ""} href="#feed" onClick={go("home")}><Icon name="home" /><span>홈</span></a>
       <a href="#stories"><Icon name="chat" /><span>고민</span></a>
-      <button aria-label="글쓰기"><Icon name="pen" /></button>
+      <button aria-label="글쓰기" onClick={() => onNavigate("write")}><Icon name="pen" /></button>
       <a href="#places"><Icon name="map" /><span>장소</span></a>
-      <a href="#profile"><Icon name="user" /><span>내 정보</span></a>
+      <a className={active === "profile" ? "active" : ""} href="#profile" onClick={go("profile")}><Icon name="user" /><span>내 정보</span></a>
     </nav>
   );
 }
 
-export default function Home({ loggedIn, onLoginClick, onLogout }: { loggedIn?: boolean; onLoginClick?: () => void; onLogout?: () => void }) {
+export default function Home({ onNavigate }: { onNavigate: (page: Page) => void }) {
   return (
     <div className="candidate-page page-b page-b-white">
-      <Header loggedIn={loggedIn} onLoginClick={onLoginClick} onLogout={onLogout} />
+      <Header active="home" onNavigate={onNavigate} />
       <main>
         <section className="hero-b">
           <div className="soft-shape shape-one" />
@@ -171,7 +220,7 @@ export default function Home({ loggedIn, onLoginClick, onLogout }: { loggedIn?: 
             <span className="eyebrow">LOVE, LIBERATED</span>
             <h1>우리의 사랑이<br />다시 <em>말랑해지도록.</em></h1>
             <p>서툰 마음도 괜찮아요. 다른 시선과 따뜻한 대화로<br className="desktop-only" /> 우리만의 답을 함께 찾아가요.</p>
-            <button className="primary-button">내 고민부터 꺼내보기 <Icon name="arrow" /></button>
+            <button className="primary-button" onClick={() => onNavigate("write")}>내 고민부터 꺼내보기 <Icon name="arrow" /></button>
           </div>
           <div className="hero-b-proof">
             <span className="mini-heart"><Icon name="heart" size={22} /></span>
@@ -253,7 +302,7 @@ export default function Home({ loggedIn, onLoginClick, onLogout }: { loggedIn?: 
           <span><b>03</b><Icon name="map" size={19} /> 우리답게 화해해요</span>
         </section>
       </main>
-      <MobileNav />
+      <MobileNav active="home" onNavigate={onNavigate} />
     </div>
   );
 }
