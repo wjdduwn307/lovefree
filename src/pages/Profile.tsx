@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react"
+import { useSession } from "../lib/useSession"
 import type { Page } from "../types"
 import { Header, Icon, MobileNav } from "./Home"
 
@@ -8,10 +9,20 @@ type ScreenProps = {
 
 const avatarThemes = ["coral", "blue", "violet", "mint"]
 
+// 같은 사용자 ID는 항상 같은 색이 되도록 ID를 숫자로 바꿔서 색을 고름
+function getAvatarTheme(userId?: string) {
+  if (!userId) return avatarThemes[0]
+
+  let hash = 0
+  for (const char of userId) {
+    hash = (hash * 31 + char.charCodeAt(0)) >>> 0
+  }
+  return avatarThemes[hash % avatarThemes.length]
+}
+
 export default function Profile({ onNavigate }: ScreenProps) {
-  const [avatarTheme] = useState(
-    () => avatarThemes[Math.floor(Math.random() * avatarThemes.length)],
-  )
+  const session = useSession()
+  const avatarTheme = getAvatarTheme(session?.user.id)
   const [relationship, setRelationship] = useState("1년 이상 3년 미만")
   const [myGender, setMyGender] = useState("여성")
   const [partnerGender, setPartnerGender] = useState("남성")
@@ -39,31 +50,46 @@ export default function Profile({ onNavigate }: ScreenProps) {
         </section>
 
         <div className="profile-layout">
-          <aside className="profile-summary">
-            <div
-              className={`default-profile-avatar avatar-theme-${avatarTheme}`}
+          <div className="profile-side-column">
+            <aside className="profile-summary">
+              <div
+                className={`default-profile-avatar avatar-theme-${avatarTheme}`}
+              >
+                <span>
+                  <Icon name="heart" size={31} />
+                </span>
+                <i />
+                <b />
+              </div>
+              <span className="fixed-image-badge">연애해방 기본 이미지</span>
+              <h2>{session?.user.email ?? "로그인이 필요해요"}</h2>
+              <p>
+                게시글과 댓글에는 이메일 대신
+                <br />
+                <strong>‘익명의 해방이’</strong>로 표시돼요.
+              </p>
+              <div className="privacy-note">
+                <Icon name="sparkle" size={17} />
+                <span>
+                  프로필 정보는 추천을 위해서만 사용되며 다른 사용자에게
+                  공개되지 않아요.
+                </span>
+              </div>
+            </aside>
+            <button
+              className="saved-library-card"
+              type="button"
+              onClick={() => onNavigate("saved")}
             >
-              <span>
-                <Icon name="heart" size={31} />
+              <span className="saved-library-icon">
+                <Icon name="bookmark" size={20} />
               </span>
-              <i />
-              <b />
-            </div>
-            <span className="fixed-image-badge">연애해방 기본 이미지</span>
-            <h2>hello123@gmail.com</h2>
-            <p>
-              게시글과 댓글에는 이메일 대신
-              <br />
-              <strong>‘익명의 해방이’</strong>로 표시돼요.
-            </p>
-            <div className="privacy-note">
-              <Icon name="sparkle" size={17} />
               <span>
-                프로필 정보는 추천을 위해서만 사용되며 다른 사용자에게 공개되지
-                않아요.
+                <b>저장 목록</b>
               </span>
-            </div>
-          </aside>
+              <Icon name="arrow" size={18} />
+            </button>
+          </div>
 
           <form className="profile-form" onSubmit={handleSave}>
             <div className="profile-form-heading">

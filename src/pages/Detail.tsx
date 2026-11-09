@@ -3,6 +3,13 @@ import type { FeedPost } from "../data/feedPosts"
 import type { Page } from "../types"
 import { Header, Icon, MobileNav } from "./Home"
 
+export type Resolution = {
+  title: string
+  body: string
+  changed: string[]
+  time: string
+}
+
 type Comment = {
   id: number
   relationship: string
@@ -33,9 +40,11 @@ const initialComments: Comment[] = [
 
 export default function Detail({
   post,
+  resolution,
   onNavigate,
 }: {
   post: FeedPost
+  resolution?: Resolution
   onNavigate: (page: Page) => void
 }) {
   const [comments, setComments] = useState(initialComments)
@@ -60,7 +69,10 @@ export default function Detail({
 
   return (
     <div className="candidate-page page-b-white detail-page">
-      <Header active="detail" onNavigate={onNavigate} />
+      <Header
+        active={resolution ? "reviews" : "detail"}
+        onNavigate={onNavigate}
+      />
       <main className="detail-main">
         <button className="detail-back" onClick={() => onNavigate("feed")}>
           <Icon name="arrow" size={17} /> 고민 피드로 돌아가기
@@ -117,6 +129,42 @@ export default function Detail({
             </button>
           </div>
         </article>
+
+        {resolution && (
+          <section className="resolution-section">
+            <span className="resolution-connector" aria-hidden="true">
+              <i />
+              <b />
+            </span>
+            <div className="resolution-card">
+              <div className="resolution-card-heading">
+                <span className="resolved-badge">
+                  <Icon name="sparkle" size={15} /> 해결했어요
+                </span>
+                <time>{resolution.time}</time>
+              </div>
+              <p className="resolution-label">이 고민을 나눈 뒤</p>
+              <h2>{resolution.title}</h2>
+              <div className="resolution-body">
+                {resolution.body
+                  .split("\n")
+                  .map((line, index) =>
+                    line ? <p key={index}>{line}</p> : <br key={index} />,
+                  )}
+              </div>
+              <div className="resolution-changes">
+                <span>우리 사이에 생긴 변화</span>
+                <div>
+                  {resolution.changed.map((item) => (
+                    <p key={item}>
+                      <Icon name="heart" size={14} /> {item}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         <section className="comment-section">
           <div className="comment-heading">
@@ -182,7 +230,10 @@ export default function Detail({
           </div>
         </section>
       </main>
-      <MobileNav active="detail" onNavigate={onNavigate} />
+      <MobileNav
+        active={resolution ? "reviews" : "detail"}
+        onNavigate={onNavigate}
+      />
     </div>
   )
 }

@@ -127,7 +127,13 @@ export function Header({
             고민 피드
           </a>
           <a href="#places">화해 장소</a>
-          <a href="#reviews">해결 후기</a>
+          <a
+            className={active === "reviews" ? "nav-active" : ""}
+            href="#reviews"
+            onClick={go("reviews")}
+          >
+            해결 후기
+          </a>
         </nav>
         <div className="header-actions">
           <button className="icon-button" aria-label="검색">
@@ -448,7 +454,10 @@ export default function Home({
               <h2>해결 후기 모아보기</h2>
               <p>고민을 나눈 뒤, 관계가 달라진 이야기를 만나보세요.</p>
             </div>
-            <button className="text-button">
+            <button
+              className="text-button"
+              onClick={() => onNavigate?.("reviews")}
+            >
               후기 전체 보기 <Icon name="arrow" size={18} />
             </button>
           </div>

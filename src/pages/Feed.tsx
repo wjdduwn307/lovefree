@@ -5,7 +5,7 @@ import { Header, Icon, MobileNav } from "./Home"
 
 const categories = ["전체", "연락 문제", "데이트", "가치관", "권태기", "장거리"]
 
-export default function Feed2({
+export default function Feed({
   onNavigate,
   onSelectPost,
 }: {
@@ -13,10 +13,12 @@ export default function Feed2({
   onSelectPost: (post: FeedPost) => void
 }) {
   const [category, setCategory] = useState("전체")
-  const visiblePosts =
-    category === "전체"
-      ? feedPosts
-      : feedPosts.filter((post) => post.category === category)
+  const [currentOnly, setCurrentOnly] = useState(false)
+  const visiblePosts = feedPosts.filter(
+    (post) =>
+      (category === "전체" || post.category === category) &&
+      (!currentOnly || !post.resolution),
+  )
 
   return (
     <div className="candidate-page page-b-white feed-page feed2-page">
@@ -26,7 +28,9 @@ export default function Feed2({
           <div>
             <span className="section-kicker">REAL STORIES</span>
             <h1>지금 나누는 고민</h1>
-            <p>한눈에 읽기 편한 목록에서 해방이들의 이야기를 만나보세요.</p>
+            <p>
+              최신 고민부터, 후기가 도착한 이야기까지 시간순으로 만나보세요.
+            </p>
           </div>
           <button
             className="primary-button"
@@ -48,8 +52,17 @@ export default function Feed2({
               </button>
             ))}
           </div>
-          <span>총 {visiblePosts.length}개의 고민</span>
+          <label className="feed-filter-toggle">
+            <span>현재 고민만 보기</span>
+            <input
+              type="checkbox"
+              checked={currentOnly}
+              onChange={(event) => setCurrentOnly(event.target.checked)}
+            />
+            <i />
+          </label>
         </div>
+        <p className="feed-result-count">총 {visiblePosts.length}개의 고민</p>
 
         <section className="feed2-list">
           {visiblePosts.map((post) => (
@@ -69,6 +82,9 @@ export default function Feed2({
                   <i />
                   <time>{post.time}</time>
                   <span>{post.category}</span>
+                  {post.resolution && (
+                    <b className="resolved-status">해결완료</b>
+                  )}
                 </div>
                 <h2>{post.title}</h2>
                 <p>{post.body.split("\n")[0]}</p>
