@@ -1,9 +1,16 @@
 import { useState, type FormEvent } from "react"
+import {
+  isSignedIn,
+  saveMyProfile,
+  type MyProfile,
+} from "../data/feedPosts"
 import { useSession } from "../lib/useSession"
 import type { Page } from "../types"
 import { Header, Icon, MobileNav } from "./Home"
+import LoginModal from "./LoginModal"
 
 type ScreenProps = {
+  profile: MyProfile | null
   onNavigate: (page: Page) => void
 }
 
@@ -20,18 +27,33 @@ function getAvatarTheme(userId?: string) {
   return avatarThemes[hash % avatarThemes.length]
 }
 
-export default function Profile({ onNavigate }: ScreenProps) {
+export default function Profile({ profile, onNavigate }: ScreenProps) {
   const session = useSession()
   const avatarTheme = getAvatarTheme(session?.user.id)
-  const [relationship, setRelationship] = useState("1년 이상 3년 미만")
-  const [myGender, setMyGender] = useState("여성")
-  const [partnerGender, setPartnerGender] = useState("남성")
+  const [relationship, setRelationship] = useState(
+    profile?.relationship ?? "1년 이상 3년 미만",
+  )
+  const [myGender, setMyGender] = useState(profile?.myGender ?? "여성")
+  const [partnerGender, setPartnerGender] = useState(
+    profile?.partnerGender ?? "남성",
+  )
   const [saved, setSaved] = useState(false)
+  const [showLogin, setShowLogin] = useState(false)
 
-  function handleSave(event: FormEvent) {
+  async function handleSave(event: FormEvent) {
     event.preventDefault()
-    setSaved(true)
-    window.setTimeout(() => setSaved(false), 2200)
+    if (!(await isSignedIn())) {
+      setShowLogin(true)
+      return
+    }
+
+    try {
+      await saveMyProfile({ relationship, myGender, partnerGender })
+      setSaved(true)
+      window.setTimeout(() => setSaved(false), 2200)
+    } catch {
+      window.alert("저장하지 못했어요. 잠시 후 다시 시도해주세요.")
+    }
   }
 
   return (
@@ -198,6 +220,7 @@ export default function Profile({ onNavigate }: ScreenProps) {
           <Icon name="sparkle" size={18} /> 프로필이 저장되었어요
         </div>
       )}
+      {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
       <MobileNav active="profile" onNavigate={onNavigate} />
     </div>
   )

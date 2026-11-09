@@ -1,11 +1,21 @@
 import {
   Navigate,
+  Outlet,
   RouterProvider,
+  ScrollRestoration,
   createBrowserRouter,
+  redirect,
+  useLoaderData,
   useNavigate,
-  useParams,
+  type LoaderFunctionArgs,
 } from "react-router"
-import { feedPosts, type FeedPost } from "./data/feedPosts"
+import {
+  fetchComments,
+  fetchMyProfile,
+  fetchPost,
+  fetchPosts,
+} from "./data/feedPosts"
+import { supabase } from "./lib/supabase"
 import Detail from "./pages/Detail"
 import DetailwithReview from "./pages/DetailwithReview"
 import Feed from "./pages/Feed"
@@ -14,6 +24,7 @@ import Home from "./pages/Home"
 import Profile from "./pages/Profile"
 import Saved from "./pages/Saved"
 import Write from "./pages/Write"
+import WriteReview from "./pages/WriteReview"
 import type { Page } from "./types"
 
 // Page 이름 -> 주소(URL) 대응표. 페이지가 늘면 여기에 한 줄 추가
@@ -26,29 +37,86 @@ const paths: Record<Page, string> = {
   saved: "/saved",
 }
 
+async function loadDetail(postId: string | undefined, fallback: string) {
+  const post = await fetchPost(postId)
+  if (!post) throw redirect(fallback)
+
+  const [comments, myProfile] = await Promise.all([
+    fetchComments(post.id),
+    fetchMyProfile(),
+  ])
+  return { post, comments, myProfile }
+}
+
+function detailLoader({ params }: LoaderFunctionArgs) {
+  return loadDetail(params.postId, paths.feed)
+}
+
+async function reviewDetailLoader({ params }: LoaderFunctionArgs) {
+  const data = await loadDetail(params.postId, paths.reviews)
+  if (!data.post.resolution) throw redirect(paths.reviews)
+  return data
+}
+
+// 글쓴이만 수정 페이지와 후기 작성 페이지에 들어올 수 있음
+async function ownPostLoader({ params }: LoaderFunctionArgs) {
+  const post = await fetchPost(params.postId)
+  if (!post) throw redirect(paths.feed)
+  if (!post.isMine) throw redirect(`${paths.feed}/${post.id}`)
+  return post
+}
+
 function usePageNavigation() {
   const navigate = useNavigate()
-  return (page: Page) => {
-    navigate(paths[page])
-    window.scrollTo(0, 0)
-  }
+  return (page: Page) => navigate(paths[page])
 }
 
 function useOpenPost(basePath: string) {
   const navigate = useNavigate()
-  return (post: FeedPost) => {
-    navigate(`${basePath}/${post.id}`)
-    window.scrollTo(0, 0)
-  }
+  return (post: { id: number }) => navigate(`${basePath}/${post.id}`)
+}
+
+function RootLayout() {
+  return (
+    <>
+      <Outlet />
+      <ScrollRestoration />
+    </>
+  )
+}
+
+function RouteLoading() {
+  return <div className="route-status">불러오는 중이에요</div>
+}
+
+function RouteError() {
+  return (
+    <div className="route-status">
+      <p>이야기를 불러오지 못했어요.</p>
+      <button
+        className="primary-button small"
+        onClick={() => window.location.reload()}
+      >
+        다시 시도
+      </button>
+    </div>
+  )
 }
 
 function HomeRoute() {
-  return <Home onNavigate={usePageNavigation()} />
+  return (
+    <Home
+      posts={useLoaderData<typeof fetchPosts>()}
+      onNavigate={usePageNavigation()}
+      onSelectReview={useOpenPost(paths.reviews)}
+    />
+  )
 }
 
 function FeedRoute() {
   return (
     <Feed
+      posts={useLoaderData<typeof fetchPosts>()}
       onNavigate={usePageNavigation()}
       onSelectPost={useOpenPost(paths.feed)}
     />
@@ -58,6 +126,7 @@ function FeedRoute() {
 function ReviewsRoute() {
   return (
     <FeedReviews
+      posts={useLoaderData<typeof fetchPosts>()}
       onNavigate={usePageNavigation()}
       onSelectPost={useOpenPost(paths.reviews)}
     />
@@ -65,29 +134,41 @@ function ReviewsRoute() {
 }
 
 function DetailRoute() {
-  const { postId } = useParams()
-  const post = feedPosts.find((item) => String(item.id) === postId)
-  const go = usePageNavigation()
-
-  if (!post) return <Navigate to={paths.feed} replace />
-  return <Detail post={post} onNavigate={go} />
+  const data = useLoaderData<typeof detailLoader>()
+  return <Detail {...data} onNavigate={usePageNavigation()} />
 }
 
 function ReviewDetailRoute() {
-  const { postId } = useParams()
-  const post = feedPosts.find((item) => String(item.id) === postId)
-  const go = usePageNavigation()
-
-  if (!post?.resolution) return <Navigate to={paths.reviews} replace />
-  return <DetailwithReview post={post} onNavigate={go} />
+  const data = useLoaderData<typeof reviewDetailLoader>()
+  return <DetailwithReview {...data} onNavigate={usePageNavigation()} />
 }
 
 function WriteRoute() {
   return <Write onNavigate={usePageNavigation()} />
 }
 
+function EditPostRoute() {
+  const post = useLoaderData<typeof ownPostLoader>()
+  return <Write key={post.id} post={post} onNavigate={usePageNavigation()} />
+}
+
+function WriteReviewRoute() {
+  const post = useLoaderData<typeof ownPostLoader>()
+  return (
+    <WriteReview key={post.id} post={post} onNavigate={usePageNavigation()} />
+  )
+}
+
 function ProfileRoute() {
-  return <Profile onNavigate={usePageNavigation()} />
+  const profile = useLoaderData<typeof fetchMyProfile>()
+  // 로그인 상태가 바뀌면 입력값을 새 프로필로 다시 채움
+  return (
+    <Profile
+      key={profile ? "member" : "guest"}
+      profile={profile}
+      onNavigate={usePageNavigation()}
+    />
+  )
 }
 
 function SavedRoute() {
@@ -95,16 +176,55 @@ function SavedRoute() {
 }
 
 const router = createBrowserRouter([
-  { path: paths.home, Component: HomeRoute },
-  { path: paths.feed, Component: FeedRoute },
-  { path: `${paths.feed}/:postId`, Component: DetailRoute },
-  { path: paths.reviews, Component: ReviewsRoute },
-  { path: `${paths.reviews}/:postId`, Component: ReviewDetailRoute },
-  { path: paths.write, Component: WriteRoute },
-  { path: paths.profile, Component: ProfileRoute },
-  { path: paths.saved, Component: SavedRoute },
-  { path: "*", element: <Navigate to={paths.home} replace /> },
+  {
+    Component: RootLayout,
+    HydrateFallback: RouteLoading,
+    ErrorBoundary: RouteError,
+    children: [
+      { path: paths.home, loader: fetchPosts, Component: HomeRoute },
+      { path: paths.feed, loader: fetchPosts, Component: FeedRoute },
+      {
+        path: `${paths.feed}/:postId`,
+        loader: detailLoader,
+        Component: DetailRoute,
+      },
+      {
+        path: `${paths.feed}/:postId/review`,
+        loader: ownPostLoader,
+        Component: WriteReviewRoute,
+      },
+      { path: paths.reviews, loader: fetchPosts, Component: ReviewsRoute },
+      {
+        path: `${paths.reviews}/:postId`,
+        loader: reviewDetailLoader,
+        Component: ReviewDetailRoute,
+      },
+      { path: paths.write, Component: WriteRoute },
+      {
+        path: `${paths.write}/:postId`,
+        loader: ownPostLoader,
+        Component: EditPostRoute,
+      },
+      {
+        path: paths.profile,
+        loader: fetchMyProfile,
+        Component: ProfileRoute,
+      },
+      { path: paths.saved, Component: SavedRoute },
+      { path: "*", element: <Navigate to={paths.home} replace /> },
+    ],
+  },
 ])
+
+// 로그인/로그아웃하면 "내 글" 표시가 달라지므로 화면 데이터를 다시 불러옴
+let currentUserId: string | undefined
+supabase.auth.onAuthStateChange((event, session) => {
+  const nextUserId = session?.user.id
+  if (event !== "INITIAL_SESSION" && nextUserId !== currentUserId) {
+    window.setTimeout(() => router.revalidate(), 0)
+  }
+  currentUserId = nextUserId
+})
 
 export default function AppRoutes() {
   return <RouterProvider router={router} />

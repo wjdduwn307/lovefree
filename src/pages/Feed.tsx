@@ -1,20 +1,22 @@
 import { useState } from "react"
-import { feedPosts, type FeedPost } from "../data/feedPosts"
+import type { FeedPost } from "../data/feedPosts"
 import type { Page } from "../types"
 import { Header, Icon, MobileNav } from "./Home"
 
 const categories = ["전체", "연락 문제", "데이트", "가치관", "권태기", "장거리"]
 
 export default function Feed({
+  posts,
   onNavigate,
   onSelectPost,
 }: {
+  posts: FeedPost[]
   onNavigate: (page: Page) => void
   onSelectPost: (post: FeedPost) => void
 }) {
   const [category, setCategory] = useState("전체")
   const [currentOnly, setCurrentOnly] = useState(false)
-  const visiblePosts = feedPosts.filter(
+  const visiblePosts = posts.filter(
     (post) =>
       (category === "전체" || post.category === category) &&
       (!currentOnly || !post.resolution),

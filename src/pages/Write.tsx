@@ -1,27 +1,65 @@
 import { useState, type FormEvent } from "react"
+import { useNavigate } from "react-router"
+import {
+  createPost,
+  isSignedIn,
+  updatePost,
+  type FeedPost,
+} from "../data/feedPosts"
 import type { Page } from "../types"
 import { Header, Icon, MobileNav } from "./Home"
+import LoginModal from "./LoginModal"
 
 type ScreenProps = {
+  post?: FeedPost
   onNavigate: (page: Page) => void
 }
 
 const topics = ["연락 문제", "데이트", "가치관", "권태기", "장거리", "기타"]
 
-export default function Write({ onNavigate }: ScreenProps) {
-  const [topic, setTopic] = useState("")
-  const [title, setTitle] = useState("")
-  const [body, setBody] = useState("")
+export default function Write({ post, onNavigate }: ScreenProps) {
+  const navigate = useNavigate()
+  const [topic, setTopic] = useState(post?.category ?? "")
+  const [title, setTitle] = useState(post?.title ?? "")
+  const [body, setBody] = useState(post?.body ?? "")
   // const [allowComments, setAllowComments] = useState(true)
   const [published, setPublished] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [showLogin, setShowLogin] = useState(false)
 
-  const canPublish = title.trim().length >= 5 && body.trim().length >= 20
+  const hasBody = body.trim().length > 0
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    if (!canPublish) return
-    setPublished(true)
-    window.setTimeout(() => onNavigate("home"), 1100)
+    if (submitting) return
+    if (!(await isSignedIn())) {
+      setShowLogin(true)
+      return
+    }
+    if (!hasBody) return
+    if (title.trim().length < 5 || body.trim().length < 20) {
+      window.alert("제목은 5자, 본문은 20자 이상 작성해주세요.")
+      return
+    }
+
+    const input = {
+      category: topic || "기타",
+      title: title.trim(),
+      body: body.trim(),
+    }
+    setSubmitting(true)
+    try {
+      let postId = post?.id
+      if (postId) await updatePost(postId, input)
+      else postId = await createPost(input)
+
+      setPublished(true)
+      const target = `/feed/${postId}`
+      window.setTimeout(() => navigate(target), 1100)
+    } catch {
+      window.alert("저장하지 못했어요. 잠시 후 다시 시도해주세요.")
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -134,16 +172,19 @@ export default function Write({ onNavigate }: ScreenProps) {
               <button
                 className="cancel-button"
                 type="button"
-                onClick={() => onNavigate("home")}
+                onClick={() =>
+                  post ? navigate(`/feed/${post.id}`) : onNavigate("home")
+                }
               >
                 취소
               </button>
               <button
-                className="primary-button publish-button"
-                disabled={!canPublish}
+                className={`primary-button publish-button ${hasBody ? "" : "is-inactive"}`}
+                disabled={submitting}
                 type="submit"
               >
-                <Icon name="pen" size={17} /> 고민 올리기
+                <Icon name="pen" size={17} />{" "}
+                {post ? "고민 수정하기" : "고민 올리기"}
               </button>
             </div>
             <p className="publish-hint">
@@ -154,8 +195,15 @@ export default function Write({ onNavigate }: ScreenProps) {
       </main>
       {published && (
         <div className="save-toast">
-          <Icon name="heart" size={18} /> 고민이 따뜻하게 전해졌어요
+          <Icon name="heart" size={18} />{" "}
+          {post ? "고민을 수정했어요" : "고민이 따뜻하게 전해졌어요"}
         </div>
+      )}
+      {showLogin && (
+        <LoginModal
+          notice="로그인 후 글을 쓸 수 있어요"
+          onClose={() => setShowLogin(false)}
+        />
       )}
       <MobileNav active="write" onNavigate={onNavigate} />
     </div>

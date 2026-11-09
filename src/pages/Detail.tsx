@@ -1,70 +1,105 @@
 import { useState, type FormEvent } from "react"
-import type { FeedPost } from "../data/feedPosts"
+import { useNavigate, useRevalidator } from "react-router"
+import {
+  createComment,
+  deleteComment,
+  deletePost,
+  deleteResolution,
+  isSignedIn,
+  updateComment,
+  type FeedPost,
+  type MyProfile,
+  type PostComment,
+  type Resolution,
+} from "../data/feedPosts"
 import type { Page } from "../types"
 import { Header, Icon, MobileNav } from "./Home"
-
-export type Resolution = {
-  title: string
-  body: string
-  changed: string[]
-  time: string
-}
-
-type Comment = {
-  id: number
-  relationship: string
-  time: string
-  text: string
-}
-
-const initialComments: Comment[] = [
-  {
-    id: 1,
-    relationship: "2년째 연애 중",
-    time: "8분 전",
-    text: "저도 비슷한 시기가 있었어요. 연락 횟수보다 서로 꼭 지키고 싶은 연락 시간을 하나 정해보니 훨씬 편해졌습니다.",
-  },
-  {
-    id: 2,
-    relationship: "8개월째 연애 중",
-    time: "21분 전",
-    text: "서운함부터 말하기보다 요즘 많이 바쁜지 먼저 물어보는 건 어떨까요? 대화의 시작이 한결 부드러웠어요.",
-  },
-  {
-    id: 3,
-    relationship: "4년째 연애 중",
-    time: "43분 전",
-    text: "기다리는 동안 어떤 기분이 들었는지를 솔직하게 말해보세요. 상대를 탓하지 않고 내 감정을 설명하는 게 중요하더라고요.",
-  },
-]
+import LoginModal from "./LoginModal"
 
 export default function Detail({
   post,
+  comments,
+  myProfile,
   resolution,
   onNavigate,
 }: {
   post: FeedPost
+  comments: PostComment[]
+  myProfile: MyProfile | null
   resolution?: Resolution
   onNavigate: (page: Page) => void
 }) {
-  const [comments, setComments] = useState(initialComments)
+  const navigate = useNavigate()
+  const revalidator = useRevalidator()
   const [comment, setComment] = useState("")
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editingText, setEditingText] = useState("")
+  const [busy, setBusy] = useState(false)
+  const [showLogin, setShowLogin] = useState(false)
 
-  function submitComment(event: FormEvent) {
+  async function run(action: () => Promise<unknown>) {
+    if (busy) return false
+    setBusy(true)
+    try {
+      await action()
+      return true
+    } catch {
+      window.alert("처리하지 못했어요. 잠시 후 다시 시도해주세요.")
+      return false
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function submitComment(event: FormEvent) {
     event.preventDefault()
     const text = comment.trim()
     if (!text) return
+    if (!(await isSignedIn())) {
+      setShowLogin(true)
+      return
+    }
 
-    setComments((current) => [
-      ...current,
-      {
-        id: Date.now(),
-        relationship: "1년 이상 3년 미만",
-        time: "방금 전",
-        text,
-      },
-    ])
-    setComment("")
+    const done = await run(async () => {
+      await createComment(post.id, text)
+      await revalidator.revalidate()
+    })
+    if (done) setComment("")
+  }
+
+  function startEditing(item: PostComment) {
+    setEditingId(item.id)
+    setEditingText(item.text)
+  }
+
+  async function saveEditing(event: FormEvent) {
+    event.preventDefault()
+    const text = editingText.trim()
+    if (!text || editingId === null) return
+
+    const done = await run(async () => {
+      await updateComment(editingId, text)
+      await revalidator.revalidate()
+    })
+    if (done) setEditingId(null)
+  }
+
+  function removeComment(commentId: number) {
+    if (!window.confirm("댓글을 삭제할까요?")) return
+    void run(async () => {
+      await deleteComment(commentId)
+      await revalidator.revalidate()
+    })
+  }
+
+  async function removePost() {
+    if (!window.confirm("글을 삭제할까요? 후기와 댓글도 함께 삭제돼요.")) return
+    if (await run(() => deletePost(post.id))) navigate("/feed")
+  }
+
+  async function removeResolution() {
+    if (!window.confirm("후기를 삭제할까요?")) return
+    if (await run(() => deleteResolution(post.id))) navigate(`/feed/${post.id}`)
   }
 
   return (
@@ -80,7 +115,9 @@ export default function Detail({
 
         <article className="detail-article">
           <div className="detail-topic-row">
-            <span>{post.category}</span>
+            <div>
+              <span>{post.category}</span>
+            </div>
             <time>{post.time}</time>
           </div>
           <h1>{post.title}</h1>
@@ -128,6 +165,22 @@ export default function Detail({
               <Icon name="bookmark" size={19} />
             </button>
           </div>
+
+          {post.isMine && (
+            <div className="owner-actions">
+              {!resolution && (
+                <button onClick={() => navigate(`/feed/${post.id}/review`)}>
+                  {post.resolution ? "후기 수정" : "후기 쓰기"}
+                </button>
+              )}
+              <button onClick={() => navigate(`/write/${post.id}`)}>
+                글 수정
+              </button>
+              <button className="danger" disabled={busy} onClick={removePost}>
+                글 삭제
+              </button>
+            </div>
+          )}
         </article>
 
         {resolution && (
@@ -152,16 +205,32 @@ export default function Detail({
                     line ? <p key={index}>{line}</p> : <br key={index} />,
                   )}
               </div>
-              <div className="resolution-changes">
-                <span>우리 사이에 생긴 변화</span>
-                <div>
-                  {resolution.changed.map((item) => (
-                    <p key={item}>
-                      <Icon name="heart" size={14} /> {item}
-                    </p>
-                  ))}
+              {resolution.changed.length > 0 && (
+                <div className="resolution-changes">
+                  <span>우리 사이에 생긴 변화</span>
+                  <div>
+                    {resolution.changed.map((item) => (
+                      <p key={item}>
+                        <Icon name="heart" size={14} /> {item}
+                      </p>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+              {post.isMine && (
+                <div className="owner-actions">
+                  <button onClick={() => navigate(`/feed/${post.id}/review`)}>
+                    후기 수정
+                  </button>
+                  <button
+                    className="danger"
+                    disabled={busy}
+                    onClick={removeResolution}
+                  >
+                    후기 삭제
+                  </button>
+                </div>
+              )}
             </div>
           </section>
         )}
@@ -184,7 +253,7 @@ export default function Detail({
             <div>
               <div className="comment-form-meta">
                 <strong>해방이</strong>
-                <span>1년 이상 3년 미만</span>
+                <span>{myProfile?.relationship ?? "연애 기간 미입력"}</span>
               </div>
               <textarea
                 maxLength={500}
@@ -197,7 +266,7 @@ export default function Detail({
                 <button
                   className="primary-button"
                   type="submit"
-                  disabled={!comment.trim()}
+                  disabled={!comment.trim() || busy}
                 >
                   댓글 등록
                 </button>
@@ -220,16 +289,56 @@ export default function Detail({
                     <i />
                     <time>{item.time}</time>
                   </div>
-                  <p>{item.text}</p>
-                  <button>
-                    <Icon name="heart" size={14} /> 도움됐어요
-                  </button>
+                  {editingId === item.id ? (
+                    <form className="comment-edit" onSubmit={saveEditing}>
+                      <textarea
+                        maxLength={500}
+                        value={editingText}
+                        onChange={(event) => setEditingText(event.target.value)}
+                      />
+                      <div className="comment-actions">
+                        <button type="submit" disabled={busy}>
+                          저장
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingId(null)}
+                        >
+                          취소
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <>
+                      <p>{item.text}</p>
+                      <div className="comment-actions">
+                        <button>
+                          <Icon name="heart" size={14} /> 도움됐어요
+                        </button>
+                        {item.isMine && (
+                          <>
+                            <button onClick={() => startEditing(item)}>
+                              수정
+                            </button>
+                            <button
+                              className="danger"
+                              disabled={busy}
+                              onClick={() => removeComment(item.id)}
+                            >
+                              삭제
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </article>
             ))}
           </div>
         </section>
       </main>
+      {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
       <MobileNav
         active={resolution ? "reviews" : "detail"}
         onNavigate={onNavigate}

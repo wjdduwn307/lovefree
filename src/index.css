@@ -341,7 +341,7 @@ a { color: inherit; text-decoration: none; }
 .form-actions { display: grid; grid-template-columns: 80px 1fr; gap: 8px; border: 0 !important; box-shadow: none !important; }
 .cancel-button { height: 50px; padding: 0 15px; border: 1px solid #e7dfe2; border-radius: 12px; color: #796d72; background: #fff; font-size: 12px; font-weight: 700; }
 .publish-button { width: 100%; padding-inline: 12px; }
-.primary-button:disabled { color: #b6aaae; background: #eae6e7; box-shadow: none; transform: none; }
+.primary-button:disabled, .primary-button.is-inactive, .primary-button.is-inactive:hover { color: #b6aaae; background: #eae6e7; box-shadow: none; transform: none; }
 .publish-hint { margin: -3px 0 0; color: #afa3a7; font-size: 8px; text-align: center; }
 .save-toast { position: fixed; z-index: 100; right: 50%; bottom: 30px; display: flex; align-items: center; gap: 8px; padding: 13px 18px; border-radius: 14px; color: #fff; background: #32282c; box-shadow: 0 12px 35px rgba(35,25,29,.22); transform: translateX(50%); font-size: 11px; font-weight: 700; animation: toast-in .25s ease-out; }
 @keyframes toast-in { from { opacity: 0; transform: translate(50%, 8px); } }
@@ -516,6 +516,17 @@ a { color: inherit; text-decoration: none; }
 .saved-post-stats { display: flex; gap: 12px; margin-top: 9px; color: #9b8f93; font-size: 8px; }.saved-post-stats span { display: flex; align-items: center; gap: 4px; }.saved-post-stats span:first-child { color: #d54a71; }
 .saved-bookmark { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 10px; color: var(--pink); background: #fff0f4; }.saved-bookmark svg { fill: rgba(237,21,86,.08); }
 
+/* Owner actions and loading */
+.owner-actions { display: flex; justify-content: flex-end; gap: 7px; margin-top: 14px; }
+.owner-actions button { padding: 8px 12px; border: 1px solid #eadfe2; border-radius: 10px; color: #6f6368; background: #fff; font-size: 10px; font-weight: 700; }
+.owner-actions button:hover { border-color: #efabc0; color: var(--pink); }
+.owner-actions .danger, .comment-item .comment-actions .danger { color: #c8384f; }
+.comment-actions { display: flex; align-items: center; gap: 12px; }
+.comment-edit textarea { width: 100%; min-height: 72px; margin: 10px 0 7px; padding: 10px; resize: vertical; border: 1px solid #e9e2e4; border-radius: 10px; outline: 0; color: #41363a; background: #fff; font-family: inherit; font-size: 11px; line-height: 1.65; }
+.comment-edit textarea:focus { border-color: #ee8fac; box-shadow: 0 0 0 3px #fff0f4; }
+.change-fields { display: grid; gap: 8px; }
+.route-status { display: grid; min-height: 100vh; place-items: center; align-content: center; gap: 14px; color: #8e8186; background: #fff; font-size: 13px; }
+.route-status p { margin: 0; }
 /* Candidate C */
 .page-c { --ink: #261f22; background: #f6f3f4; }
 .page-c .site-header { color: #fff; border-bottom-color: #41363a; background: #261f22; }

@@ -1,4 +1,5 @@
 import { useState, type MouseEvent, type ReactNode } from "react"
+import type { FeedPost } from "../data/feedPosts"
 import { supabase } from "../lib/supabase"
 import { useSession } from "../lib/useSession"
 import LoginModal from "./LoginModal"
@@ -171,77 +172,26 @@ export function Header({
   )
 }
 
-const stories = [
-  {
-    category: "연락 문제",
-    time: "12분 전",
-    title: "연락 텀이 길어진 남자친구, 제가 예민한 걸까요?",
-    text: "예전에는 바빠도 한두 시간 안에는 답이 왔는데 요즘은 반나절씩 소식이 없어요. 서운하다고 말하면 부담스러워할까 봐 고민돼요.",
-    comments: 28,
-    likes: 46,
-    avatar: "민",
-    tone: "coral",
-  },
-  {
-    category: "데이트",
-    time: "34분 전",
-    title: "기념일을 자꾸 잊는 연인과 어떻게 대화할까요?",
-    text: "날짜 자체보다 나만 우리 관계를 중요하게 생각하는 것 같은 기분이 들어요. 싸우지 않고 제 마음을 잘 전하고 싶어요.",
-    comments: 19,
-    likes: 31,
-    avatar: "수",
-    tone: "blue",
-  },
-  {
-    category: "가치관",
-    time: "1시간 전",
-    title: "서로 다른 소비 습관, 맞춰갈 수 있을까요?",
-    text: "저는 미래를 위해 저축하는 편이고 연인은 지금의 행복이 더 중요하대요. 함께 정할 수 있는 기준이 필요해요.",
-    comments: 36,
-    likes: 52,
-    avatar: "지",
-    tone: "violet",
-  },
-]
+const storyTones = ["coral", "blue", "violet"]
 
-const resolvedStories = [
-  {
-    topic: "연락 문제",
-    before: "연락 텀이 길어진 남자친구, 제가 예민한 걸까요?",
-    title: "답장 시간보다 서로의 하루를 묻기로 했어요",
-    text: "댓글에서 알려준 대화법으로 서운함 대신 제가 바라는 걸 솔직히 말했어요. 매일 짧게라도 서로의 하루를 나누기로 했습니다.",
-    likes: 127,
-    comments: 18,
-  },
-  {
-    topic: "데이트",
-    before: "기념일을 자꾸 잊는 연인과 어떻게 대화할까요?",
-    title: "기념일보다 중요한 마음을 확인했어요",
-    text: "함께 기억하고 싶은 날을 캘린더에 직접 정했어요. 서운함을 참는 대신 차분히 설명하니 연인도 제 마음을 이해해 줬어요.",
-    likes: 94,
-    comments: 12,
-  },
-  {
-    topic: "가치관",
-    before: "서로 다른 소비 습관, 맞춰갈 수 있을까요?",
-    title: "우리 둘만의 소비 기준이 생겼어요",
-    text: "각자의 방식을 틀렸다고 말하지 않고 공동 목표부터 정했습니다. 한 달에 한 번 함께 점검하면서 맞춰가기로 했어요.",
-    likes: 81,
-    comments: 9,
-  },
-]
+function preview(text: string) {
+  const line = text.replace(/\s+/g, " ").trim()
+  return line.length > 90 ? `${line.slice(0, 90)}…` : line
+}
 
 function StoryCard({
-  story = stories[0],
+  story,
   compact = false,
 }: {
-  story?: typeof stories[number]
+  story: FeedPost
   compact?: boolean
 }) {
   return (
     <article className={`story-card ${compact ? "story-compact" : ""}`}>
       <div className="story-meta">
-        <span className={`avatar avatar-${story.tone}`}>{story.avatar}</span>
+        <span className={`avatar avatar-${storyTones[story.id % storyTones.length]}`}>
+          해
+        </span>
         <div>
           <strong>익명의 해방이</strong>
           <span>
@@ -253,7 +203,7 @@ function StoryCard({
         </button>
       </div>
       <h3>{story.title}</h3>
-      <p>{story.text}</p>
+      <p>{preview(story.body)}</p>
       <div className="story-stats">
         <span>
           <Icon name="heart" size={17} /> {story.likes}
@@ -340,10 +290,16 @@ export function MobileNav({
 }
 
 export default function Home({
+  posts,
   onNavigate,
+  onSelectReview,
 }: {
+  posts: FeedPost[]
   onNavigate?: (page: Page) => void
+  onSelectReview?: (post: { id: number }) => void
 }) {
+  const resolvedPosts = posts.filter((post) => post.resolution).slice(0, 3)
+
   return (
     <div className="candidate-page page-b page-b-white">
       <Header onNavigate={onNavigate} />
@@ -395,8 +351,8 @@ export default function Home({
               </button>
             </div>
             <div className="b-story-list">
-              {stories.slice(0, 2).map((story) => (
-                <StoryCard key={story.title} story={story} compact />
+              {posts.slice(0, 2).map((story) => (
+                <StoryCard key={story.id} story={story} compact />
               ))}
             </div>
           </div>
@@ -462,32 +418,36 @@ export default function Home({
             </button>
           </div>
           <div className="resolved-grid">
-            {resolvedStories.map((review) => (
-              <article className="resolved-card" key={review.title}>
+            {resolvedPosts.map((post) => (
+              <button
+                className="resolved-card"
+                key={post.id}
+                onClick={() => onSelectReview?.(post)}
+              >
                 <div className="resolved-origin">
-                  <span>{review.topic}</span>
+                  <span>{post.category}</span>
                   <p>
                     <b>이전 고민</b>
-                    {review.before}
+                    {post.title}
                   </p>
                 </div>
                 <div className="resolved-body">
                   <span className="resolved-badge">
                     <Icon name="sparkle" size={14} /> 해결했어요
                   </span>
-                  <h3>{review.title}</h3>
-                  <p>{review.text}</p>
+                  <h3>{post.resolution?.title}</h3>
+                  <p>{preview(post.resolution?.body ?? "")}</p>
                 </div>
                 <div className="resolved-stats">
                   <span>
-                    <Icon name="heart" size={16} /> 도움됐어요 {review.likes}
+                    <Icon name="heart" size={16} /> 도움됐어요 {post.likes}
                   </span>
                   <span>
-                    <Icon name="chat" size={16} /> {review.comments}
+                    <Icon name="chat" size={16} /> {post.comments}
                   </span>
                   <Icon name="arrow" size={17} />
                 </div>
-              </article>
+              </button>
             ))}
           </div>
         </section>

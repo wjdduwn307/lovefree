@@ -1,15 +1,17 @@
-import { feedPosts, type FeedPost } from "../data/feedPosts"
+import type { FeedPost } from "../data/feedPosts"
 import type { Page } from "../types"
 import { Header, Icon, MobileNav } from "./Home"
 
 export default function Reviews2({
+  posts,
   onNavigate,
   onSelectPost,
 }: {
+  posts: FeedPost[]
   onNavigate: (page: Page) => void
   onSelectPost: (post: FeedPost) => void
 }) {
-  const resolvedPosts = feedPosts.filter((post) => post.resolution)
+  const resolvedPosts = posts.filter((post) => post.resolution)
 
   return (
     <div className="candidate-page page-b-white reviews-alt-page">

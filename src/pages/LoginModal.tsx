@@ -1,7 +1,13 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-export default function LoginModal({ onClose }: { onClose: () => void }) {
+export default function LoginModal({
+  notice,
+  onClose,
+}: {
+  notice?: string
+  onClose: () => void
+}) {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -20,6 +26,7 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div className="w-80 rounded-2xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
+        {notice && <p className="mb-3 text-sm font-bold text-pink-500">{notice}</p>}
         <h2 className="mb-4 text-lg font-bold">{mode === 'login' ? '로그인' : '회원가입'}</h2>
         <input className="mb-2 w-full rounded border p-2" placeholder="이메일"
           value={email} onChange={(e) => setEmail(e.target.value)} />
