@@ -1,7 +1,6 @@
-import { useMemo, useState, type FormEvent } from "react"
+import { useState, type FormEvent } from "react"
+import type { Page } from "../types"
 import { Header, Icon, MobileNav } from "./Home"
-
-type Page = "home" | "write" | "profile"
 
 type ScreenProps = {
   onNavigate: (page: Page) => void
@@ -10,9 +9,8 @@ type ScreenProps = {
 const avatarThemes = ["coral", "blue", "violet", "mint"]
 
 export default function Profile({ onNavigate }: ScreenProps) {
-  const avatarTheme = useMemo(
+  const [avatarTheme] = useState(
     () => avatarThemes[Math.floor(Math.random() * avatarThemes.length)],
-    [],
   )
   const [relationship, setRelationship] = useState("1년 이상 3년 미만")
   const [myGender, setMyGender] = useState("여성")

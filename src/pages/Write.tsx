@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from "react"
+import type { Page } from "../types"
 import { Header, Icon, MobileNav } from "./Home"
-
-type Page = "home" | "write" | "profile"
 
 type ScreenProps = {
   onNavigate: (page: Page) => void
