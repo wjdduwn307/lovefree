@@ -5,6 +5,44 @@ import { Header, Icon, MobileNav } from "./Home"
 
 const categories = ["전체", "연락 문제", "데이트", "가치관", "권태기", "장거리"]
 
+export function FeedCard({
+  post,
+  onSelect,
+}: {
+  post: FeedPost
+  onSelect: (post: FeedPost) => void
+}) {
+  return (
+    <button className="feed2-card" onClick={() => onSelect(post)}>
+      <span
+        className={`feed-mini-avatar feed2-avatar feed-avatar-${(post.id % 4) + 1}`}
+      >
+        <Icon name="heart" size={17} />
+      </span>
+      <div className="feed2-card-content">
+        <div className="feed2-meta">
+          <strong>익명의 해방이</strong>
+          <i />
+          <time>{post.time}</time>
+          <span>{post.category}</span>
+          {post.resolution && <b className="resolved-status">해결완료</b>}
+        </div>
+        <h2>{post.title}</h2>
+        <p>{post.body.split("\n")[0]}</p>
+        <div className="feed2-stats">
+          <span>
+            <Icon name="heart" size={16} /> {post.likes}
+          </span>
+          <span>
+            <Icon name="chat" size={16} /> 댓글 {post.comments}
+          </span>
+        </div>
+      </div>
+      <Icon name="arrow" size={19} />
+    </button>
+  )
+}
+
 export default function Feed({
   posts,
   onNavigate,
@@ -68,39 +106,7 @@ export default function Feed({
 
         <section className="feed2-list">
           {visiblePosts.map((post) => (
-            <button
-              className="feed2-card"
-              key={post.id}
-              onClick={() => onSelectPost(post)}
-            >
-              <span
-                className={`feed-mini-avatar feed2-avatar feed-avatar-${(post.id % 4) + 1}`}
-              >
-                <Icon name="heart" size={17} />
-              </span>
-              <div className="feed2-card-content">
-                <div className="feed2-meta">
-                  <strong>익명의 해방이</strong>
-                  <i />
-                  <time>{post.time}</time>
-                  <span>{post.category}</span>
-                  {post.resolution && (
-                    <b className="resolved-status">해결완료</b>
-                  )}
-                </div>
-                <h2>{post.title}</h2>
-                <p>{post.body.split("\n")[0]}</p>
-                <div className="feed2-stats">
-                  <span>
-                    <Icon name="heart" size={16} /> {post.likes}
-                  </span>
-                  <span>
-                    <Icon name="chat" size={16} /> 댓글 {post.comments}
-                  </span>
-                </div>
-              </div>
-              <Icon name="arrow" size={19} />
-            </button>
+            <FeedCard key={post.id} post={post} onSelect={onSelectPost} />
           ))}
         </section>
       </main>

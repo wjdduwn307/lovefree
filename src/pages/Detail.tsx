@@ -252,7 +252,7 @@ export default function Detail({
             </span>
             <div>
               <div className="comment-form-meta">
-                <strong>해방이</strong>
+                <strong>{post.isMine ? "글쓴 해방이" : "해방이"}</strong>
                 <span>{myProfile?.relationship ?? "연애 기간 미입력"}</span>
               </div>
               <textarea
@@ -284,7 +284,7 @@ export default function Detail({
                 </span>
                 <div>
                   <div className="comment-meta">
-                    <strong>해방이</strong>
+                    <strong>{item.isAuthor ? "글쓴 해방이" : "해방이"}</strong>
                     <span>{item.relationship}</span>
                     <i />
                     <time>{item.time}</time>

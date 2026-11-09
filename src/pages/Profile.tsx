@@ -111,6 +111,19 @@ export default function Profile({ profile, onNavigate }: ScreenProps) {
               </span>
               <Icon name="arrow" size={18} />
             </button>
+            <button
+              className="saved-library-card"
+              type="button"
+              onClick={() => onNavigate("myPosts")}
+            >
+              <span className="saved-library-icon">
+                <Icon name="pen" size={20} />
+              </span>
+              <span>
+                <b>내가 쓴 글 보기</b>
+              </span>
+              <Icon name="arrow" size={18} />
+            </button>
           </div>
 
           <form className="profile-form" onSubmit={handleSave}>

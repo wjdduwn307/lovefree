@@ -69,8 +69,10 @@ select
   c.relationship,
   c.body,
   c.created_at,
-  coalesce(c.user_id = auth.uid(), false) as is_mine
-from public.comments c;
+  coalesce(c.user_id = auth.uid(), false) as is_mine,
+  coalesce(c.user_id = p.user_id, false) as is_author
+from public.comments c
+join public.posts p on p.id = c.post_id;
 
 -- 3. 접근 권한. 뷰는 읽기만, 수정은 지정한 칸만 가능
 revoke all on public.profiles, public.posts, public.resolutions, public.comments,

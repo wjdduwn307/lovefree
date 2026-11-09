@@ -28,6 +28,7 @@ export type PostComment = {
   time: string
   text: string
   isMine: boolean
+  isAuthor: boolean
 }
 
 export type MyProfile = {
@@ -67,6 +68,7 @@ type CommentRow = {
   body: string
   created_at: string
   is_mine: boolean
+  is_author?: boolean
 }
 
 const MISSING = "미입력"
@@ -131,6 +133,16 @@ export async function fetchPosts() {
   return (data as PostRow[]).map(toPost)
 }
 
+export async function fetchMyPosts() {
+  const { data, error } = await supabase
+    .from("posts_public")
+    .select("*")
+    .eq("is_mine", true)
+    .order("created_at", { ascending: false })
+  if (error) throw error
+  return (data as PostRow[]).map(toPost)
+}
+
 export async function fetchPost(postId: string | undefined) {
   const id = Number(postId)
   if (!Number.isInteger(id)) return null
@@ -157,6 +169,7 @@ export async function fetchComments(postId: number): Promise<PostComment[]> {
     time: relativeTime(row.created_at),
     text: row.body,
     isMine: row.is_mine,
+    isAuthor: row.is_author ?? false,
   }))
 }
 

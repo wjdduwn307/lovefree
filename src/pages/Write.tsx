@@ -2,13 +2,11 @@ import { useState, type FormEvent } from "react"
 import { useNavigate } from "react-router"
 import {
   createPost,
-  isSignedIn,
   updatePost,
   type FeedPost,
 } from "../data/feedPosts"
 import type { Page } from "../types"
 import { Header, Icon, MobileNav } from "./Home"
-import LoginModal from "./LoginModal"
 
 type ScreenProps = {
   post?: FeedPost
@@ -25,18 +23,12 @@ export default function Write({ post, onNavigate }: ScreenProps) {
   // const [allowComments, setAllowComments] = useState(true)
   const [published, setPublished] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [showLogin, setShowLogin] = useState(false)
 
   const hasBody = body.trim().length > 0
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    if (submitting) return
-    if (!(await isSignedIn())) {
-      setShowLogin(true)
-      return
-    }
-    if (!hasBody) return
+    if (submitting || !hasBody) return
     if (title.trim().length < 5 || body.trim().length < 20) {
       window.alert("제목은 5자, 본문은 20자 이상 작성해주세요.")
       return
@@ -179,8 +171,8 @@ export default function Write({ post, onNavigate }: ScreenProps) {
                 취소
               </button>
               <button
-                className={`primary-button publish-button ${hasBody ? "" : "is-inactive"}`}
-                disabled={submitting}
+                className="primary-button publish-button"
+                disabled={!hasBody || submitting}
                 type="submit"
               >
                 <Icon name="pen" size={17} />{" "}
@@ -198,12 +190,6 @@ export default function Write({ post, onNavigate }: ScreenProps) {
           <Icon name="heart" size={18} />{" "}
           {post ? "고민을 수정했어요" : "고민이 따뜻하게 전해졌어요"}
         </div>
-      )}
-      {showLogin && (
-        <LoginModal
-          notice="로그인 후 글을 쓸 수 있어요"
-          onClose={() => setShowLogin(false)}
-        />
       )}
       <MobileNav active="write" onNavigate={onNavigate} />
     </div>

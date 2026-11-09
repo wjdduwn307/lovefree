@@ -1,3 +1,4 @@
+import { createContext, useContext, useState } from "react"
 import {
   Navigate,
   Outlet,
@@ -11,9 +12,11 @@ import {
 } from "react-router"
 import {
   fetchComments,
+  fetchMyPosts,
   fetchMyProfile,
   fetchPost,
   fetchPosts,
+  isSignedIn,
 } from "./data/feedPosts"
 import { supabase } from "./lib/supabase"
 import Detail from "./pages/Detail"
@@ -21,6 +24,8 @@ import DetailwithReview from "./pages/DetailwithReview"
 import Feed from "./pages/Feed"
 import FeedReviews from "./pages/Feed_Reviews"
 import Home from "./pages/Home"
+import LoginModal from "./pages/LoginModal"
+import MyPosts from "./pages/MyPosts"
 import Profile from "./pages/Profile"
 import Saved from "./pages/Saved"
 import Write from "./pages/Write"
@@ -35,6 +40,7 @@ const paths: Record<Page, string> = {
   write: "/write",
   profile: "/profile",
   saved: "/saved",
+  myPosts: "/my-posts",
 }
 
 async function loadDetail(postId: string | undefined, fallback: string) {
@@ -66,9 +72,29 @@ async function ownPostLoader({ params }: LoaderFunctionArgs) {
   return post
 }
 
+// 로그인하지 않으면 글쓰기 화면에 들어올 수 없음
+async function writeLoader() {
+  if (!(await isSignedIn())) throw redirect(paths.home)
+  return null
+}
+
+async function myPostsLoader() {
+  const [posts, signedIn] = await Promise.all([fetchMyPosts(), isSignedIn()])
+  return { posts, signedIn }
+}
+
+const LoginPromptContext = createContext<() => void>(() => {})
+
 function usePageNavigation() {
   const navigate = useNavigate()
-  return (page: Page) => navigate(paths[page])
+  const promptLogin = useContext(LoginPromptContext)
+  return async (page: Page) => {
+    if (page === "write" && !(await isSignedIn())) {
+      promptLogin()
+      return
+    }
+    navigate(paths[page])
+  }
 }
 
 function useOpenPost(basePath: string) {
@@ -77,11 +103,26 @@ function useOpenPost(basePath: string) {
 }
 
 function RootLayout() {
+  const navigate = useNavigate()
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+
+  // 팝업에서 로그인까지 마치면 바로 글쓰기 화면으로 이동
+  async function closeLoginPrompt() {
+    setShowLoginPrompt(false)
+    if (await isSignedIn()) navigate(paths.write)
+  }
+
   return (
-    <>
+    <LoginPromptContext value={() => setShowLoginPrompt(true)}>
       <Outlet />
       <ScrollRestoration />
-    </>
+      {showLoginPrompt && (
+        <LoginModal
+          notice="로그인 후 글을 쓸 수 있어요"
+          onClose={closeLoginPrompt}
+        />
+      )}
+    </LoginPromptContext>
   )
 }
 
@@ -109,6 +150,7 @@ function HomeRoute() {
       posts={useLoaderData<typeof fetchPosts>()}
       onNavigate={usePageNavigation()}
       onSelectReview={useOpenPost(paths.reviews)}
+      onSelectPost={useOpenPost(paths.feed)}
     />
   )
 }
@@ -171,6 +213,16 @@ function ProfileRoute() {
   )
 }
 
+function MyPostsRoute() {
+  return (
+    <MyPosts
+      {...useLoaderData<typeof myPostsLoader>()}
+      onNavigate={usePageNavigation()}
+      onSelectPost={useOpenPost(paths.feed)}
+    />
+  )
+}
+
 function SavedRoute() {
   return <Saved onNavigate={usePageNavigation()} />
 }
@@ -199,7 +251,7 @@ const router = createBrowserRouter([
         loader: reviewDetailLoader,
         Component: ReviewDetailRoute,
       },
-      { path: paths.write, Component: WriteRoute },
+      { path: paths.write, loader: writeLoader, Component: WriteRoute },
       {
         path: `${paths.write}/:postId`,
         loader: ownPostLoader,
@@ -211,6 +263,11 @@ const router = createBrowserRouter([
         Component: ProfileRoute,
       },
       { path: paths.saved, Component: SavedRoute },
+      {
+        path: paths.myPosts,
+        loader: myPostsLoader,
+        Component: MyPostsRoute,
+      },
       { path: "*", element: <Navigate to={paths.home} replace /> },
     ],
   },

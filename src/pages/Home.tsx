@@ -182,12 +182,26 @@ function preview(text: string) {
 function StoryCard({
   story,
   compact = false,
+  onSelect,
 }: {
   story: FeedPost
   compact?: boolean
+  onSelect?: (post: { id: number }) => void
 }) {
   return (
-    <article className={`story-card ${compact ? "story-compact" : ""}`}>
+    <article
+      className={`story-card ${compact ? "story-compact" : ""}`}
+      tabIndex={0}
+      onClick={(event) => {
+        // 카드 안의 더 보기, 저장 버튼을 누를 때는 이동하지 않음
+        if (!(event.target as HTMLElement).closest("button")) onSelect?.(story)
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" && event.target === event.currentTarget) {
+          onSelect?.(story)
+        }
+      }}
+    >
       <div className="story-meta">
         <span className={`avatar avatar-${storyTones[story.id % storyTones.length]}`}>
           해
@@ -293,10 +307,12 @@ export default function Home({
   posts,
   onNavigate,
   onSelectReview,
+  onSelectPost,
 }: {
   posts: FeedPost[]
   onNavigate?: (page: Page) => void
   onSelectReview?: (post: { id: number }) => void
+  onSelectPost?: (post: { id: number }) => void
 }) {
   const resolvedPosts = posts.filter((post) => post.resolution).slice(0, 3)
 
@@ -352,7 +368,12 @@ export default function Home({
             </div>
             <div className="b-story-list">
               {posts.slice(0, 2).map((story) => (
-                <StoryCard key={story.id} story={story} compact />
+                <StoryCard
+                  key={story.id}
+                  story={story}
+                  compact
+                  onSelect={onSelectPost}
+                />
               ))}
             </div>
           </div>
