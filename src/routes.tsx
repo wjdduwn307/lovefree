@@ -17,6 +17,7 @@ import {
   fetchPost,
   fetchPosts,
   isSignedIn,
+  searchPosts,
 } from "./data/feedPosts"
 import { supabase } from "./lib/supabase"
 import Detail from "./pages/Detail"
@@ -28,6 +29,7 @@ import LoginModal from "./pages/LoginModal"
 import MyPosts from "./pages/MyPosts"
 import Profile from "./pages/Profile"
 import Saved from "./pages/Saved"
+import Search from "./pages/Search"
 import Write from "./pages/Write"
 import WriteReview from "./pages/WriteReview"
 import type { Page } from "./types"
@@ -76,6 +78,12 @@ async function ownPostLoader({ params }: LoaderFunctionArgs) {
 async function writeLoader() {
   if (!(await isSignedIn())) throw redirect(paths.home)
   return null
+}
+
+async function searchLoader({ request }: LoaderFunctionArgs) {
+  const query = new URL(request.url).searchParams.get("q")?.trim() ?? ""
+  if (!query) throw redirect(paths.home)
+  return { query, posts: await searchPosts(query) }
 }
 
 async function myPostsLoader() {
@@ -213,6 +221,20 @@ function ProfileRoute() {
   )
 }
 
+function SearchRoute() {
+  const openPost = useOpenPost(paths.feed)
+  const openReview = useOpenPost(paths.reviews)
+  return (
+    <Search
+      {...useLoaderData<typeof searchLoader>()}
+      onNavigate={usePageNavigation()}
+      onSelectPost={(post) =>
+        post.resolution ? openReview(post) : openPost(post)
+      }
+    />
+  )
+}
+
 function MyPostsRoute() {
   return (
     <MyPosts
@@ -263,6 +285,7 @@ const router = createBrowserRouter([
         Component: ProfileRoute,
       },
       { path: paths.saved, Component: SavedRoute },
+      { path: "/search", loader: searchLoader, Component: SearchRoute },
       {
         path: paths.myPosts,
         loader: myPostsLoader,

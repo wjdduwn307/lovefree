@@ -133,6 +133,41 @@ export async function fetchPosts() {
   return (data as PostRow[]).map(toPost)
 }
 
+// 검색어를 PostgREST 필터에 안전하게 넣을 수 있는 패턴으로 변환
+function searchPattern(word: string) {
+  const literal = word.replace(/[\\%_]/g, "\\$&")
+  return `"%${literal.replace(/["\\]/g, "\\$&")}%"`
+}
+
+const SEARCH_COLUMNS = [
+  "category",
+  "title",
+  "body",
+  "resolution_title",
+  "resolution_body",
+]
+
+// 띄어쓰기로 나눈 단어가 모두 포함된 글을 찾음
+export async function searchPosts(query: string) {
+  // *는 DB 필터에서 "아무 글자"로 해석되므로 검색어에서 제외
+  const words = query.replace(/\*/g, " ").split(/\s+/).filter(Boolean)
+  if (words.length === 0) return []
+
+  let request = supabase.from("posts_public").select("*")
+  for (const word of words) {
+    const pattern = searchPattern(word)
+    request = request.or(
+      SEARCH_COLUMNS.map((column) => `${column}.ilike.${pattern}`).join(","),
+    )
+  }
+
+  const { data, error } = await request.order("created_at", {
+    ascending: false,
+  })
+  if (error) throw error
+  return (data as PostRow[]).map(toPost)
+}
+
 export async function fetchMyPosts() {
   const { data, error } = await supabase
     .from("posts_public")
