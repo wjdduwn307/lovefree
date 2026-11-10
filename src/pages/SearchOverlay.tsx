@@ -65,7 +65,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
             onChange={(event) => setText(event.target.value)}
           />
           <button type="submit" aria-label="검색 실행">
-            <Icon name="search" size={30} />
+            <Icon name="search" size={19} />
           </button>
         </form>
 
