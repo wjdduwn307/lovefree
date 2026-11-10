@@ -1,7 +1,7 @@
 import { useState } from "react"
 import type { FeedPost } from "../data/feedPosts"
 import type { Page } from "../types"
-import { Header, Icon, MobileNav } from "./Home"
+import { AuthorName, Header, Icon, MobileNav } from "./Home"
 
 const categories = ["전체", "연락 문제", "데이트", "가치관", "권태기", "장거리"]
 
@@ -21,7 +21,7 @@ export function FeedCard({
       </span>
       <div className="feed2-card-content">
         <div className="feed2-meta">
-          <strong>익명의 해방이</strong>
+          <AuthorName admin={post.isAdminAuthor} name="익명의 해방이" />
           <i />
           <time>{post.time}</time>
           <span>{post.category}</span>

@@ -12,8 +12,9 @@ import {
   type PostComment,
   type Resolution,
 } from "../data/feedPosts"
+import { useIsAdmin } from "../lib/useIsAdmin"
 import type { Page } from "../types"
-import { Header, Icon, MobileNav } from "./Home"
+import { AuthorName, Header, Icon, MobileNav } from "./Home"
 import LoginModal from "./LoginModal"
 
 export default function Detail({
@@ -31,6 +32,7 @@ export default function Detail({
 }) {
   const navigate = useNavigate()
   const revalidator = useRevalidator()
+  const isAdmin = useIsAdmin()
   const [comment, setComment] = useState("")
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editingText, setEditingText] = useState("")
@@ -127,7 +129,7 @@ export default function Detail({
               <Icon name="heart" size={22} />
             </span>
             <div className="detail-author-name">
-              <strong>익명의 해방이</strong>
+              <AuthorName admin={post.isAdminAuthor} name="익명의 해방이" />
               <span>마음을 나눈 해방이</span>
             </div>
             <dl>
@@ -252,7 +254,10 @@ export default function Detail({
             </span>
             <div>
               <div className="comment-form-meta">
-                <strong>{post.isMine ? "글쓴 해방이" : "해방이"}</strong>
+                <AuthorName
+                  admin={isAdmin}
+                  name={post.isMine ? "글쓴 해방이" : "해방이"}
+                />
                 <span>{myProfile?.relationship ?? "연애 기간 미입력"}</span>
               </div>
               <textarea
@@ -284,7 +289,10 @@ export default function Detail({
                 </span>
                 <div>
                   <div className="comment-meta">
-                    <strong>{item.isAuthor ? "글쓴 해방이" : "해방이"}</strong>
+                    <AuthorName
+                      admin={item.isAdminAuthor}
+                      name={item.isAuthor ? "글쓴 해방이" : "해방이"}
+                    />
                     <span>{item.relationship}</span>
                     <i />
                     <time>{item.time}</time>

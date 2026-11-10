@@ -5,8 +5,9 @@ import {
   updatePost,
   type FeedPost,
 } from "../data/feedPosts"
+import { useIsAdmin } from "../lib/useIsAdmin"
 import type { Page } from "../types"
-import { Header, Icon, MobileNav } from "./Home"
+import { AuthorName, Header, Icon, MobileNav } from "./Home"
 
 type ScreenProps = {
   post?: FeedPost
@@ -17,6 +18,7 @@ const topics = ["연락 문제", "데이트", "가치관", "권태기", "장거�
 
 export default function Write({ post, onNavigate }: ScreenProps) {
   const navigate = useNavigate()
+  const isAdmin = useIsAdmin()
   const [topic, setTopic] = useState(post?.category ?? "")
   const [title, setTitle] = useState(post?.title ?? "")
   const [body, setBody] = useState(post?.body ?? "")
@@ -125,8 +127,10 @@ export default function Write({ post, onNavigate }: ScreenProps) {
                 <Icon name="heart" size={22} />
               </div>
               <div>
-                <strong>익명의 해방이</strong>
-                <span>완전 익명으로 게시돼요</span>
+                <AuthorName admin={isAdmin} name="익명의 해방이" />
+                <span>
+                  {isAdmin ? "관리자로 게시돼요" : "완전 익명으로 게시돼요"}
+                </span>
               </div>
               <Icon name="sparkle" size={18} />
             </div>

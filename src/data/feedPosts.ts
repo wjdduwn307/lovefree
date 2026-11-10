@@ -19,6 +19,7 @@ export type FeedPost = {
   comments: number
   likes: number
   isMine: boolean
+  isAdminAuthor: boolean
   resolution?: Resolution
 }
 
@@ -29,6 +30,7 @@ export type PostComment = {
   text: string
   isMine: boolean
   isAuthor: boolean
+  isAdminAuthor: boolean
 }
 
 export type MyProfile = {
@@ -55,6 +57,7 @@ type PostRow = {
   likes: number
   created_at: string
   is_mine: boolean
+  is_admin_author?: boolean
   comment_count: number
   resolution_title: string | null
   resolution_body: string | null
@@ -69,6 +72,7 @@ type CommentRow = {
   created_at: string
   is_mine: boolean
   is_author?: boolean
+  is_admin_author?: boolean
 }
 
 const MISSING = "미입력"
@@ -107,6 +111,7 @@ function toPost(row: PostRow): FeedPost {
     comments: row.comment_count,
     likes: row.likes,
     isMine: row.is_mine,
+    isAdminAuthor: row.is_admin_author ?? false,
     resolution:
       row.resolution_title && row.resolution_created_at
         ? {
@@ -205,6 +210,7 @@ export async function fetchComments(postId: number): Promise<PostComment[]> {
     text: row.body,
     isMine: row.is_mine,
     isAuthor: row.is_author ?? false,
+    isAdminAuthor: row.is_admin_author ?? false,
   }))
 }
 

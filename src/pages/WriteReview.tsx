@@ -5,8 +5,9 @@ import {
   updateResolution,
   type FeedPost,
 } from "../data/feedPosts"
+import { useIsAdmin } from "../lib/useIsAdmin"
 import type { Page } from "../types"
-import { Header, Icon, MobileNav } from "./Home"
+import { AuthorName, Header, Icon, MobileNav } from "./Home"
 
 const CHANGE_FIELDS = 3
 
@@ -18,6 +19,7 @@ export default function WriteReview({
   onNavigate: (page: Page) => void
 }) {
   const navigate = useNavigate()
+  const isAdmin = useIsAdmin()
   const existing = post.resolution
   const [title, setTitle] = useState(existing?.title ?? "")
   const [body, setBody] = useState(existing?.body ?? "")
@@ -128,8 +130,10 @@ export default function WriteReview({
                 <Icon name="heart" size={22} />
               </div>
               <div>
-                <strong>익명의 해방이</strong>
-                <span>완전 익명으로 게시돼요</span>
+                <AuthorName admin={isAdmin} name="익명의 해방이" />
+                <span>
+                  {isAdmin ? "관리자로 게시돼요" : "완전 익명으로 게시돼요"}
+                </span>
               </div>
               <Icon name="sparkle" size={18} />
             </div>

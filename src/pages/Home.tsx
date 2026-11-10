@@ -1,16 +1,10 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type FormEvent,
-  type MouseEvent,
-  type ReactNode,
-} from "react"
-import { useNavigate } from "react-router"
+import { useState, type MouseEvent, type ReactNode } from "react"
 import type { FeedPost } from "../data/feedPosts"
 import { supabase } from "../lib/supabase"
+import { useIsAdmin } from "../lib/useIsAdmin"
 import { useSession } from "../lib/useSession"
 import LoginModal from "./LoginModal"
+import SearchOverlay from "./SearchOverlay"
 import type { ActivePage, Page } from "../types"
 
 type IconName = "arrow" | "bookmark" | "chat" | "heart" | "home" | "map" | "pen" | "search" | "sparkle" | "user"
@@ -92,6 +86,20 @@ function Logo({ inverse = false }: { inverse?: boolean }) {
   )
 }
 
+export function AuthorName({
+  admin,
+  name,
+}: {
+  admin: boolean
+  name: string
+}) {
+  return admin ? (
+    <strong className="admin-name">관리자 해방이</strong>
+  ) : (
+    <strong>{name}</strong>
+  )
+}
+
 export function Header({
   active = "home",
   onNavigate,
@@ -100,32 +108,9 @@ export function Header({
   onNavigate?: (page: Page) => void
 }) {
   const session = useSession()
-  const navigate = useNavigate()
   const [showLogin, setShowLogin] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [searchText, setSearchText] = useState("")
-  const searchRef = useRef<HTMLDivElement>(null)
-
-  // 검색창 바깥을 누르면 닫음
-  useEffect(() => {
-    if (!searchOpen) return
-    function closeOnOutside(event: PointerEvent) {
-      if (!searchRef.current?.contains(event.target as Node)) {
-        setSearchOpen(false)
-      }
-    }
-    document.addEventListener("pointerdown", closeOnOutside)
-    return () => document.removeEventListener("pointerdown", closeOnOutside)
-  }, [searchOpen])
-
-  function submitSearch(event: FormEvent) {
-    event.preventDefault()
-    const query = searchText.trim()
-    if (!query) return
-    setSearchOpen(false)
-    setSearchText("")
-    navigate(`/search?q=${encodeURIComponent(query)}`)
-  }
+  const isAdmin = useIsAdmin()
 
   // <a href="#..."> 의 기본 동작(주소 변경)을 막고, 화면 전환 함수만 실행
   const go = (page: Page) => (event: MouseEvent) => {
@@ -170,38 +155,16 @@ export function Header({
           </a>
         </nav>
         <div className="header-actions">
-          <div className="header-search" ref={searchRef}>
+          <div className="header-search">
             <button
               className="icon-button"
               aria-label="검색"
-              aria-expanded={searchOpen}
-              onClick={() => setSearchOpen((open) => !open)}
+              onClick={() => setSearchOpen(true)}
             >
               <Icon name="search" />
             </button>
-            {searchOpen && (
-              <form
-                className="search-popover"
-                role="search"
-                onSubmit={submitSearch}
-              >
-                <input
-                  autoFocus
-                  aria-label="게시글과 후기 검색"
-                  maxLength={50}
-                  placeholder="고민이나 후기를 검색해보세요"
-                  value={searchText}
-                  onChange={(event) => setSearchText(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape") setSearchOpen(false)
-                  }}
-                />
-                <button type="submit" aria-label="검색 실행">
-                  <Icon name="search" size={17} />
-                </button>
-              </form>
-            )}
           </div>
+          {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
           {session && (
             <button
               className="icon-button"
@@ -209,6 +172,14 @@ export function Header({
               onClick={() => onNavigate?.("profile")}
             >
               <Icon name="user" />
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              className="login-button admin-button"
+              onClick={() => onNavigate?.("admin")}
+            >
+              관리자
             </button>
           )}
           <button
@@ -269,7 +240,7 @@ function StoryCard({
           해
         </span>
         <div>
-          <strong>익명의 해방이</strong>
+          <AuthorName admin={story.isAdminAuthor} name="익명의 해방이" />
           <span>
             <b>{story.category}</b> · {story.time}
           </span>

@@ -4,6 +4,7 @@ import {
   saveMyProfile,
   type MyProfile,
 } from "../data/feedPosts"
+import { useIsAdmin } from "../lib/useIsAdmin"
 import { useSession } from "../lib/useSession"
 import type { Page } from "../types"
 import { Header, Icon, MobileNav } from "./Home"
@@ -29,6 +30,7 @@ function getAvatarTheme(userId?: string) {
 
 export default function Profile({ profile, onNavigate }: ScreenProps) {
   const session = useSession()
+  const isAdmin = useIsAdmin()
   const avatarTheme = getAvatarTheme(session?.user.id)
   const [relationship, setRelationship] = useState(
     profile?.relationship ?? "1년 이상 3년 미만",
@@ -124,6 +126,21 @@ export default function Profile({ profile, onNavigate }: ScreenProps) {
               </span>
               <Icon name="arrow" size={18} />
             </button>
+            {isAdmin && (
+              <button
+                className="saved-library-card"
+                type="button"
+                onClick={() => onNavigate("admin")}
+              >
+                <span className="saved-library-icon">
+                  <Icon name="sparkle" size={20} />
+                </span>
+                <span>
+                  <b>관리자 페이지</b>
+                </span>
+                <Icon name="arrow" size={18} />
+              </button>
+            )}
           </div>
 
           <form className="profile-form" onSubmit={handleSave}>

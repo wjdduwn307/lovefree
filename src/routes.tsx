@@ -19,7 +19,13 @@ import {
   isSignedIn,
   searchPosts,
 } from "./data/feedPosts"
+import {
+  fetchAdminTerms,
+  fetchIsAdmin,
+  recordSearch,
+} from "./data/hotTopics"
 import { supabase } from "./lib/supabase"
+import Admin from "./pages/Admin"
 import Detail from "./pages/Detail"
 import DetailwithReview from "./pages/DetailwithReview"
 import Feed from "./pages/Feed"
@@ -43,6 +49,7 @@ const paths: Record<Page, string> = {
   profile: "/profile",
   saved: "/saved",
   myPosts: "/my-posts",
+  admin: "/admin",
 }
 
 async function loadDetail(postId: string | undefined, fallback: string) {
@@ -81,9 +88,19 @@ async function writeLoader() {
 }
 
 async function searchLoader({ request }: LoaderFunctionArgs) {
-  const query = new URL(request.url).searchParams.get("q")?.trim() ?? ""
+  const url = new URL(request.url)
+  const query = url.searchParams.get("q")?.trim() ?? ""
   if (!query) throw redirect(paths.home)
-  return { query, posts: await searchPosts(query) }
+
+  const posts = await searchPosts(query)
+  // Hot 주제를 눌러 들어온 검색은 순위가 저절로 굳어지지 않게 집계에서 제외
+  if (posts.length > 0 && !url.searchParams.has("hot")) recordSearch(query)
+  return { query, posts }
+}
+
+async function adminLoader() {
+  if (!(await fetchIsAdmin())) throw redirect(paths.home)
+  return fetchAdminTerms()
 }
 
 async function myPostsLoader() {
@@ -221,6 +238,15 @@ function ProfileRoute() {
   )
 }
 
+function AdminRoute() {
+  return (
+    <Admin
+      terms={useLoaderData<typeof adminLoader>()}
+      onNavigate={usePageNavigation()}
+    />
+  )
+}
+
 function SearchRoute() {
   const openPost = useOpenPost(paths.feed)
   const openReview = useOpenPost(paths.reviews)
@@ -286,6 +312,7 @@ const router = createBrowserRouter([
       },
       { path: paths.saved, Component: SavedRoute },
       { path: "/search", loader: searchLoader, Component: SearchRoute },
+      { path: paths.admin, loader: adminLoader, Component: AdminRoute },
       {
         path: paths.myPosts,
         loader: myPostsLoader,
