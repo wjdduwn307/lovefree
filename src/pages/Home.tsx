@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase"
 import { useIsAdmin } from "../lib/useIsAdmin"
 import { useSession } from "../lib/useSession"
 import LoginModal from "./LoginModal"
+import LikeButton from "./LikeButton"
 import SaveButton from "./SaveButton"
 import SearchOverlay from "./SearchOverlay"
 import type { ActivePage, Page } from "../types"
@@ -261,9 +262,7 @@ function StoryCard({
       <h3>{story.title}</h3>
       <p>{preview(story.body)}</p>
       <div className="story-stats">
-        <span>
-          <Icon name="heart" size={17} /> {story.likes}
-        </span>
+        <LikeButton post={story} className="like-button" />
         <span>
           <Icon name="chat" size={17} /> {story.comments}
         </span>

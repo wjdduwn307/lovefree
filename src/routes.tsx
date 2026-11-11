@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import {
   Navigate,
   Outlet,
@@ -26,13 +26,14 @@ import {
   recordSearch,
 } from "./data/hotTopics"
 import { LoginPromptContext, usePromptLogin } from "./lib/loginPrompt"
+import { ToastContext } from "./lib/toast"
 import { supabase } from "./lib/supabase"
 import Admin from "./pages/Admin"
 import Detail from "./pages/Detail"
 import DetailwithReview from "./pages/DetailwithReview"
 import Feed from "./pages/Feed"
 import FeedReviews from "./pages/Feed_Reviews"
-import Home from "./pages/Home"
+import Home, { Icon } from "./pages/Home"
 import LoginModal from "./pages/LoginModal"
 import MyPosts from "./pages/MyPosts"
 import Profile from "./pages/Profile"
@@ -139,6 +140,17 @@ function RootLayout() {
     next?: string
   } | null>(null)
 
+  const [toast, setToast] = useState<{ id: number; message: string } | null>(
+    null,
+  )
+  const toastTimer = useRef<number | undefined>(undefined)
+
+  const showToast = useCallback((message: string) => {
+    window.clearTimeout(toastTimer.current)
+    setToast({ id: Date.now(), message })
+    toastTimer.current = window.setTimeout(() => setToast(null), 2400)
+  }, [])
+
   // 팝업에서 로그인까지 마치면 원래 하려던 화면으로 이동
   async function closeLoginPrompt() {
     const next = loginPrompt?.next
@@ -148,11 +160,18 @@ function RootLayout() {
 
   return (
     <LoginPromptContext value={(notice, next) => setLoginPrompt({ notice, next })}>
-      <Outlet />
-      <ScrollRestoration />
-      {loginPrompt && (
-        <LoginModal notice={loginPrompt.notice} onClose={closeLoginPrompt} />
-      )}
+      <ToastContext value={showToast}>
+        <Outlet />
+        <ScrollRestoration />
+        {loginPrompt && (
+          <LoginModal notice={loginPrompt.notice} onClose={closeLoginPrompt} />
+        )}
+        {toast && (
+          <div className="save-toast" key={toast.id} role="status">
+            <Icon name="bookmark" size={18} /> {toast.message}
+          </div>
+        )}
+      </ToastContext>
     </LoginPromptContext>
   )
 }

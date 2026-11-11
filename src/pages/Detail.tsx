@@ -15,6 +15,7 @@ import {
 import { useIsAdmin } from "../lib/useIsAdmin"
 import type { Page } from "../types"
 import { AuthorName, Header, Icon, MobileNav } from "./Home"
+import LikeButton from "./LikeButton"
 import LoginModal from "./LoginModal"
 import SaveButton from "./SaveButton"
 
@@ -158,9 +159,7 @@ export default function Detail({
           </div>
 
           <div className="detail-reactions">
-            <button>
-              <Icon name="heart" size={18} /> 공감해요 {post.likes}
-            </button>
+            <LikeButton post={post} size={18} label="공감해요" />
             <span>
               <Icon name="chat" size={18} /> 댓글 {comments.length}
             </span>

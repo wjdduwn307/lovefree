@@ -21,6 +21,7 @@ export type FeedPost = {
   isMine: boolean
   isAdminAuthor: boolean
   isSaved: boolean
+  isLiked: boolean
   resolution?: Resolution
 }
 
@@ -60,6 +61,7 @@ type PostRow = {
   is_mine: boolean
   is_admin_author?: boolean
   saved_at?: string | null
+  is_liked?: boolean
   comment_count: number
   resolution_title: string | null
   resolution_body: string | null
@@ -115,6 +117,7 @@ function toPost(row: PostRow): FeedPost {
     isMine: row.is_mine,
     isAdminAuthor: row.is_admin_author ?? false,
     isSaved: Boolean(row.saved_at),
+    isLiked: row.is_liked ?? false,
     resolution:
       row.resolution_title && row.resolution_created_at
         ? {
@@ -190,6 +193,20 @@ export async function savePost(postId: number) {
   const { error } = await supabase.from("saved_posts").insert({ post_id: postId })
   // 이미 저장된 글이면 그대로 둠
   if (error && error.code !== "23505") throw error
+}
+
+export async function likePost(postId: number) {
+  const { error } = await supabase.from("post_likes").insert({ post_id: postId })
+  // 이미 공감한 글이면 그대로 둠
+  if (error && error.code !== "23505") throw error
+}
+
+export async function unlikePost(postId: number) {
+  const { error } = await supabase
+    .from("post_likes")
+    .delete()
+    .eq("post_id", postId)
+  if (error) throw error
 }
 
 export async function unsavePost(postId: number) {
