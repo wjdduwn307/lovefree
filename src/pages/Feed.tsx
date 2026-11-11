@@ -31,7 +31,7 @@ export function FeedCard({
         <p>{post.body.split("\n")[0]}</p>
         <div className="feed2-stats">
           <span>
-            <Icon name="heart" size={16} /> {post.likes}
+            <Icon name="heart" size={16} filled={post.isLiked} /> {post.likes}
           </span>
           <span>
             <Icon name="chat" size={16} /> 댓글 {post.comments}
