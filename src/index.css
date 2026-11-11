@@ -527,6 +527,9 @@ a { color: inherit; text-decoration: none; }
 .change-fields { display: grid; gap: 8px; }
 .b-story-list .story-card { cursor: pointer; }
 .story-stats button.is-saved, .detail-reactions .detail-bookmark.is-saved { color: #211d1f; }
+.like-pop svg { animation: heart-pop .5s cubic-bezier(.17,.89,.32,1.4); }
+@keyframes heart-pop { 0% { transform: scale(1); } 25% { transform: translateY(-5px) scale(1.5); } 55% { transform: translateY(0) scale(.85); } 75% { transform: scale(1.1); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .like-pop svg { animation: none; } }
 .story-stats .like-button { display: flex; align-items: center; gap: 5px; margin-left: 0; padding: 0; color: #dc4d76; font-size: 11px; }
 .save-toast { width: max-content; max-width: calc(100vw - 32px); line-height: 1.5; }
 .header-search { position: relative; }

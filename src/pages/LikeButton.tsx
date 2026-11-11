@@ -24,6 +24,8 @@ export default function LikeButton({
   const promptLogin = usePromptLogin()
   // 누르자마자 하트와 숫자가 바뀌도록 서버 응답 전까지 임시 상태를 보여줌
   const [pending, setPending] = useState<boolean | null>(null)
+  // 공감을 누른 순간에만 하트가 튀어오르게 함
+  const [popping, setPopping] = useState(false)
   const liked = pending ?? post.isLiked
   const count =
     pending === null ? post.likes : post.likes + (pending ? 1 : -1)
@@ -37,6 +39,7 @@ export default function LikeButton({
 
     const next = !liked
     setPending(next)
+    setPopping(next)
     try {
       if (next) await likePost(post.id)
       else await unlikePost(post.id)
@@ -50,10 +53,13 @@ export default function LikeButton({
 
   return (
     <button
-      className={`${className} ${liked ? "is-liked" : ""}`.trim()}
+      className={[className, liked && "is-liked", popping && "like-pop"]
+        .filter(Boolean)
+        .join(" ")}
       aria-pressed={liked}
       title={liked ? "공감 취소" : "공감하기"}
       onClick={toggle}
+      onAnimationEnd={() => setPopping(false)}
     >
       <Icon name="heart" size={size} filled={liked} />
       {label ? ` ${label} ${count}` : ` ${count}`}
