@@ -95,18 +95,18 @@ function Logo({ inverse = false }: { inverse?: boolean }) {
   )
 }
 
+// highlight: 글쓴 해방이처럼 강조할 이름이면 핫핑크로 표시
 export function AuthorName({
   admin,
   name,
+  highlight = false,
 }: {
   admin: boolean
   name: string
+  highlight?: boolean
 }) {
-  return admin ? (
-    <strong className="admin-name">관리자 해방이</strong>
-  ) : (
-    <strong>{name}</strong>
-  )
+  if (admin) return <strong className="admin-name">관리자 해방이</strong>
+  return <strong className={highlight ? "author-name" : undefined}>{name}</strong>
 }
 
 export function Header({

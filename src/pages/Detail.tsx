@@ -256,6 +256,7 @@ export default function Detail({
                 <AuthorName
                   admin={isAdmin}
                   name={post.isMine ? "글쓴 해방이" : "해방이"}
+                  highlight={post.isMine}
                 />
                 <span>{myProfile?.relationship ?? "연애 기간 미입력"}</span>
               </div>
@@ -291,6 +292,7 @@ export default function Detail({
                     <AuthorName
                       admin={item.isAdminAuthor}
                       name={item.isAuthor ? "글쓴 해방이" : "해방이"}
+                      highlight={item.isAuthor}
                     />
                     <span>{item.relationship}</span>
                     <i />
