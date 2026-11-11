@@ -4,12 +4,21 @@ import { supabase } from "../lib/supabase"
 import { useIsAdmin } from "../lib/useIsAdmin"
 import { useSession } from "../lib/useSession"
 import LoginModal from "./LoginModal"
+import SaveButton from "./SaveButton"
 import SearchOverlay from "./SearchOverlay"
 import type { ActivePage, Page } from "../types"
 
 type IconName = "arrow" | "bookmark" | "chat" | "heart" | "home" | "map" | "pen" | "search" | "sparkle" | "user"
 
-export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
+export function Icon({
+  name,
+  size = 20,
+  filled = false,
+}: {
+  name: IconName
+  size?: number
+  filled?: boolean
+}) {
   const paths: Record<IconName, ReactNode> = {
     arrow: <path d="M5 12h14m-5-5 5 5-5 5" />,
     bookmark: (
@@ -63,7 +72,7 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="none"
+      fill={filled ? "currentColor" : "none"}
       stroke="currentColor"
       strokeWidth="1.8"
       strokeLinecap="round"
@@ -258,9 +267,7 @@ function StoryCard({
         <span>
           <Icon name="chat" size={17} /> {story.comments}
         </span>
-        <button aria-label="저장">
-          <Icon name="bookmark" size={18} />
-        </button>
+        <SaveButton post={story} />
       </div>
     </article>
   )

@@ -16,6 +16,7 @@ import { useIsAdmin } from "../lib/useIsAdmin"
 import type { Page } from "../types"
 import { AuthorName, Header, Icon, MobileNav } from "./Home"
 import LoginModal from "./LoginModal"
+import SaveButton from "./SaveButton"
 
 export default function Detail({
   post,
@@ -163,9 +164,7 @@ export default function Detail({
             <span>
               <Icon name="chat" size={18} /> 댓글 {comments.length}
             </span>
-            <button className="detail-bookmark" aria-label="게시글 저장">
-              <Icon name="bookmark" size={19} />
-            </button>
+            <SaveButton post={post} className="detail-bookmark" size={19} />
           </div>
 
           {post.isMine && (

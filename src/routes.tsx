@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react"
+import { useState } from "react"
 import {
   Navigate,
   Outlet,
@@ -16,6 +16,7 @@ import {
   fetchMyProfile,
   fetchPost,
   fetchPosts,
+  fetchSavedPosts,
   isSignedIn,
   searchPosts,
 } from "./data/feedPosts"
@@ -24,6 +25,7 @@ import {
   fetchIsAdmin,
   recordSearch,
 } from "./data/hotTopics"
+import { LoginPromptContext, usePromptLogin } from "./lib/loginPrompt"
 import { supabase } from "./lib/supabase"
 import Admin from "./pages/Admin"
 import Detail from "./pages/Detail"
@@ -103,19 +105,22 @@ async function adminLoader() {
   return fetchAdminTerms()
 }
 
+async function savedLoader() {
+  const [posts, signedIn] = await Promise.all([fetchSavedPosts(), isSignedIn()])
+  return { posts, signedIn }
+}
+
 async function myPostsLoader() {
   const [posts, signedIn] = await Promise.all([fetchMyPosts(), isSignedIn()])
   return { posts, signedIn }
 }
 
-const LoginPromptContext = createContext<() => void>(() => {})
-
 function usePageNavigation() {
   const navigate = useNavigate()
-  const promptLogin = useContext(LoginPromptContext)
+  const promptLogin = usePromptLogin()
   return async (page: Page) => {
     if (page === "write" && !(await isSignedIn())) {
-      promptLogin()
+      promptLogin("로그인 후 글을 쓸 수 있어요", paths.write)
       return
     }
     navigate(paths[page])
@@ -129,23 +134,24 @@ function useOpenPost(basePath: string) {
 
 function RootLayout() {
   const navigate = useNavigate()
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+  const [loginPrompt, setLoginPrompt] = useState<{
+    notice: string
+    next?: string
+  } | null>(null)
 
-  // 팝업에서 로그인까지 마치면 바로 글쓰기 화면으로 이동
+  // 팝업에서 로그인까지 마치면 원래 하려던 화면으로 이동
   async function closeLoginPrompt() {
-    setShowLoginPrompt(false)
-    if (await isSignedIn()) navigate(paths.write)
+    const next = loginPrompt?.next
+    setLoginPrompt(null)
+    if (next && (await isSignedIn())) navigate(next)
   }
 
   return (
-    <LoginPromptContext value={() => setShowLoginPrompt(true)}>
+    <LoginPromptContext value={(notice, next) => setLoginPrompt({ notice, next })}>
       <Outlet />
       <ScrollRestoration />
-      {showLoginPrompt && (
-        <LoginModal
-          notice="로그인 후 글을 쓸 수 있어요"
-          onClose={closeLoginPrompt}
-        />
+      {loginPrompt && (
+        <LoginModal notice={loginPrompt.notice} onClose={closeLoginPrompt} />
       )}
     </LoginPromptContext>
   )
@@ -272,7 +278,13 @@ function MyPostsRoute() {
 }
 
 function SavedRoute() {
-  return <Saved onNavigate={usePageNavigation()} />
+  return (
+    <Saved
+      {...useLoaderData<typeof savedLoader>()}
+      onNavigate={usePageNavigation()}
+      onSelectPost={useOpenPost(paths.feed)}
+    />
+  )
 }
 
 const router = createBrowserRouter([
@@ -310,7 +322,7 @@ const router = createBrowserRouter([
         loader: fetchMyProfile,
         Component: ProfileRoute,
       },
-      { path: paths.saved, Component: SavedRoute },
+      { path: paths.saved, loader: savedLoader, Component: SavedRoute },
       { path: "/search", loader: searchLoader, Component: SearchRoute },
       { path: paths.admin, loader: adminLoader, Component: AdminRoute },
       {
